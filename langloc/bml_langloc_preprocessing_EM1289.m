@@ -83,9 +83,12 @@ filteredEventTimes = processAndPlotTriggerEvents(TrigMat1);
 % trigger states into a binary format with adjusted bit order. The code is
 % automated, it doesnt' require any prefix or exclusion period
 
-trialTimingOnset = filteredEventTimes{2};
-% The filteredEventTimes is of the same order as TrigMat. All we need is
-% filteredEventTimes{2}
+trialTimingOnset = filteredEventTimes{2}; % corresponding to audio onset
+% The filteredEventTimes is of the same order as TrigMat, but contains twice the variables. 
+% The first 8 bits provide the rise times of the triggers (onsets), and the
+% second 8 bits provide the corresponding fall times of the triggers
+% (offset). Based on the timing between onset and offsets, duration can be
+% estimated.
 
 assert(length(trialTimingOnset)==120,'Failed trigger condition; Try the less automated approach');
 
