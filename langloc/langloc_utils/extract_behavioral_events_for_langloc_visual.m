@@ -1,61 +1,70 @@
-function [events_table] = extract_behavioral_events_for_langloc_visual(varargin)
-%EXTRACT_TIMING_FOR_LANGLOC_AUDIO Summary of this function goes here
-%   Detailed explanation goes here
+function events_table = extract_behavioral_events_for_langloc_visual(varargin)
+    % Parse input arguments
+    p = inputParser;
+    addParameter(p, 'behavior_files', []);
+    addParameter(p, 'sampling', []);
+    parse(p, varargin{:});
+    
+    d_events = p.Results.behavior_files;
+    sampling_freq = p.Results.sampling;
 
-% Define default values
-d_events = [];
+    % Process behavioral events
+    all_events_Table = {};
+    for nn = 1:numel(d_events)
+        filename = fullfile(d_events(nn).folder, d_events(nn).name);
+        opts = detectImportOptions(filename);
+        opts = setvartype(opts, 'char');
+        event_table = readtable(filename, opts);
+        condition = event_table.condition;
+        non_fixation = ~strcmp(condition, 'F');
+        event_table = event_table(non_fixation, :);
+        all_events_Table{nn, 1} = event_table;
+    end
 
+    events_table = all_events_Table{1};
+    for tt = 2:size(all_events_Table, 1)
+        events_table = [events_table; all_events_Table{tt}];
+    end
 
-% Parse name-value pairs
-for i = 1:2:length(varargin)
-    switch varargin{i}
-        case 'behavior_files'
-            d_events = varargin{i+1};
-        case 'sampling'
-            sampling_freq = varargin{i+1};
+    % Convert relevant columns to numeric
+    numeric_cols = {'list', 'planned_onset', 'actual_onset', 'probe_answer', 'response', 'RT', 'trial', 'trial_completed'};
+    for col = numeric_cols
+        events_table.(col{1}) = cellfun(@str2double, events_table.(col{1}));
+    end
+    events_table.final_list = events_table.list;
+
+    % Load materials based on the number of d_events
+    load('materials.mat');
+    num_runs = numel(d_events);
+    
+    switch num_runs
+        case 1
+            mat_r1r2r3 = materials.run1;
+        case 2
+            mat_r1r2r3 = [materials.run1; materials.run2];
+        case 3
+            mat_r1r2r3 = [materials.run1; materials.run2; materials.run3];
         otherwise
-            error('Unknown parameter name: %s', varargin{i});
+            mat_r1r2r3 = [];
+            for i = 1:num_runs
+                run_name = sprintf('run%d', i);
+                if isfield(materials, run_name)
+                    mat_r1r2r3 = [mat_r1r2r3; materials.(run_name)];
+                else
+                    warning('Run %d not found in materials. Skipping.', i);
+                end
+            end
     end
-end
-
-all_events_Table={};
-for nn=1:size(d_events)
-    filename=strcat(d_events(nn).folder,'/',d_events(nn).name);
-    opts = detectImportOptions(filename);
-    opts = setvartype(opts,'char');
-    event_table=readtable(filename,opts);
-    condition=event_table.condition;
-    non_fixation=find(~strcmp(condition,'F'));
-    event_table=event_table(non_fixation,:);
-    TJNew = event_table; % Ashley edited this on 5/19, event table didn't have a date_time
-    %TJNew= removevars(event_table,{'date_time'});
-    all_events_Table{nn,1}=[TJNew];
-end
-
-events_table=all_events_Table{1};
-for tt=1:size(all_events_Table,1)
-    event_table=all_events_Table{tt,1};
-    try
-        TJNew = event_table;
-        %TJNew= removevars(event_table,{'date_time'});
-        all_events_Table{tt}=TJNew;
-    catch
-        all_events_Table{tt}=event_table;
+    
+    mat_r1r2r3 = mat_r1r2r3(~ismember(mat_r1r2r3.condition, 'F'), :);
+    
+    assert(all(ismember(events_table.word1, mat_r1r2r3.word1)));
+    assert(all(events_table.list == cell2mat(mat_r1r2r3.list)));
+    assert(all(events_table.trial == cell2mat(mat_r1r2r3.trial)));
+    
+    words = [arrayfun(@(x) ['word', num2str(x)], 1:12, 'UniformOutput', false), 'probe'];
+    
+    for word = words
+        events_table.(word{1}) = mat_r1r2r3.(word{1});
     end
-end
-%vents_table.list=cell2mat(cellfun(@(x) 0, events_table.list,'uni',false))
-for nn=2:size(all_events_Table,1)
-    events_table=[events_table;all_events_Table{nn}];
-end
-
-events_table.list = cellfun(@str2num,events_table.list);
-events_table.planned_onset = cellfun(@str2num,events_table.planned_onset);
-events_table.actual_onset = cellfun(@str2num,events_table.actual_onset);
-events_table.probe_answer = cellfun(@str2num,events_table.probe_answer);
-events_table.response = cellfun(@str2num,events_table.response);
-events_table.RT = cellfun(@str2num,events_table.RT);
-events_table.trial = cellfun(@str2num,events_table.trial);
-events_table.trial_completed = cellfun(@str2num,events_table.trial_completed);
-events_table.final_list=events_table.list;
-
 end
