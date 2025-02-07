@@ -31,8 +31,8 @@ function generateExperimentReport(obj, reportName)
         'Total SEEG Electrodes', num2str(sum(contains(obj.elec_ch_type, 'seeg')));
         'Unipolar Contacts', num2str(length(obj.elec_ch_valid));
         'Bipolar Contacts', num2str(length(obj.bip_ch_label));
-        'Significant Unipolar Electrodes (High Gamma)', num2str(sum(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan)));
-        'Significant Bipolar Electrodes (High Gamma)', num2str(sum(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan_bip)));
+         'Significant Unipolar Electrodes (High Gamma)', num2str(sum(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan)));
+         'Significant Bipolar Electrodes (High Gamma)', num2str(sum(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan_bip)));
     };
     
     tbl = Table(infoTable);
@@ -56,124 +56,185 @@ function generateExperimentReport(obj, reportName)
     rt_correct = rt(acc == 1);
     cond_correct = cond(acc == 1);
 
-    mean_rt_all = mean(rt_correct, 'omitnan');
-    mean_rt_sentence = mean(rt_correct(strcmp(cond_correct, 'sentence')), 'omitnan');
-    mean_rt_nonword = mean(rt_correct(strcmp(cond_correct, 'nonword')), 'omitnan');
+    switch obj.experiment
 
-    % Results Table
-    tableContent = {
-        'Condition', 'Mean RT (ms)';
-        'Overall', sprintf('%6.1f ± %.1f', mean_rt_all*1000, std(rt_correct)*1000);
-        'Sentence (S)', sprintf('%6.1f ± %.1f', mean_rt_sentence*1000, std(rt_correct(strcmp(cond_correct, 'sentence')))*1000);
-        'Nonword (N)', sprintf('%6.1f ± %.1f', mean_rt_nonword*1000, std(rt_correct(strcmp(cond_correct, 'nonword')))*1000)
-    };
-    tbl = Table(tableContent);
-    tbl.Style = {Border('solid'), ColSep('solid'), RowSep('solid')};
-    tbl.TableEntriesStyle = {HAlign('center')};
-    add(rpt, tbl);
+        case 'LangLocVisual'
+            mean_rt_all = mean(rt_correct, 'omitnan');
+            mean_rt_sentence = mean(rt_correct(strcmp(cond_correct, 'sentence')), 'omitnan');
+            mean_rt_nonword = mean(rt_correct(strcmp(cond_correct, 'nonword')), 'omitnan');
+        
+            % Results Table
+            tableContent = {
+                'Condition', 'Mean RT (ms)';
+                'Overall', sprintf('%6.1f ± %.1f', mean_rt_all*1000, std(rt_correct)*1000);
+                'Sentence (S)', sprintf('%6.1f ± %.1f', mean_rt_sentence*1000, std(rt_correct(strcmp(cond_correct, 'sentence')))*1000);
+                'Nonword (N)', sprintf('%6.1f ± %.1f', mean_rt_nonword*1000, std(rt_correct(strcmp(cond_correct, 'nonword')))*1000)
+            };
+            tbl = Table(tableContent);
+            tbl.Style = {Border('solid'), ColSep('solid'), RowSep('solid')};
+            tbl.TableEntriesStyle = {HAlign('center')};
+            add(rpt, tbl);
+        
+            % Reaction Time Distribution Plot
+            add(rpt, Heading2('Reaction Time Distributions'));
+            debugMode = false; % Set to true for debugging
+            if debugMode
+                f = figure('Visible', 'on', 'Position', [100 100 800 600]);
+            else
+                f = figure('Visible', 'off', 'Position', [100 100 800 600]);
+            end
+            subplot(1,2,1)
+            histogram(rt_correct(strcmp(cond_correct, 'sentence'))*1000, 'BinWidth', 50)
+            title('Sentence Condition RT Distribution')
+            xlabel('Reaction Time (ms)')
+            ylabel('Frequency')
+        
+            subplot(1,2,2)
+            histogram(rt_correct(strcmp(cond_correct, 'nonword'))*1000, 'BinWidth', 50)
+            title('Nonword Condition RT Distribution')
+            xlabel('Reaction Time (ms)')
+            ylabel('Frequency')
+        
+            % Add the figure to the PDF
+            add(rpt, Figure(f));
+            close(f);
 
-    % Reaction Time Distribution Plot
-    add(rpt, Heading2('Reaction Time Distributions'));
-    debugMode = false; % Set to true for debugging
-    if debugMode
-        f = figure('Visible', 'on', 'Position', [100 100 800 600]);
-    else
-        f = figure('Visible', 'off', 'Position', [100 100 800 600]);
+            % High Gamma Plot Generation (All trials)
+            conds.A = find(strcmp(obj.condition, 'sentence'));
+            conds.B = find(strcmp(obj.condition, 'nonword'));
+            add(rpt, Heading2('High Gamma Plots (All Trials)'));
+            high_gamma_plot(obj, conds, rpt);
+
+             % High Gamma Plot Generation (Accurate Trials <= 5 seconds)
+            
+            valid_trials =  obj.events_table.accuracy == 1;
+            conds.A = find(strcmp(obj.condition, 'sentence') & valid_trials);
+            conds.B = find(strcmp(obj.condition, 'nonword') & valid_trials);
+            add(rpt, Heading2('High Gamma Plots for Accurate trials only'));
+            high_gamma_plot(obj, conds, rpt);
+
+            
+        case 'LangLocAudio'
+
+            mean_rt_all = mean(rt_correct, 'omitnan');
+            mean_rt_sentence = mean(rt_correct(strcmp(cond_correct, 'sentence')), 'omitnan');
+            mean_rt_nonword = mean(rt_correct(strcmp(cond_correct, 'nonword')), 'omitnan');
+        
+            % Results Table
+            tableContent = {
+                'Condition', 'Mean RT (ms)';
+                'Overall', sprintf('%6.1f ± %.1f', mean_rt_all*1000, std(rt_correct)*1000);
+                'Sentence (S)', sprintf('%6.1f ± %.1f', mean_rt_sentence*1000, std(rt_correct(strcmp(cond_correct, 'sentence')))*1000);
+                'Nonword (N)', sprintf('%6.1f ± %.1f', mean_rt_nonword*1000, std(rt_correct(strcmp(cond_correct, 'nonword')))*1000)
+            };
+            tbl = Table(tableContent);
+            tbl.Style = {Border('solid'), ColSep('solid'), RowSep('solid')};
+            tbl.TableEntriesStyle = {HAlign('center')};
+            add(rpt, tbl);
+        
+            % Reaction Time Distribution Plot
+            add(rpt, Heading2('Reaction Time Distributions'));
+            debugMode = false; % Set to true for debugging
+            if debugMode
+                f = figure('Visible', 'on', 'Position', [100 100 800 600]);
+            else
+                f = figure('Visible', 'off', 'Position', [100 100 800 600]);
+            end
+            subplot(1,2,1)
+            histogram(rt_correct(strcmp(cond_correct, 'sentence'))*1000, 'BinWidth', 50)
+            title('Sentence Condition RT Distribution')
+            xlabel('Reaction Time (ms)')
+            ylabel('Frequency')
+        
+            subplot(1,2,2)
+            histogram(rt_correct(strcmp(cond_correct, 'nonword'))*1000, 'BinWidth', 50)
+            title('Nonword Condition RT Distribution')
+            xlabel('Reaction Time (ms)')
+            ylabel('Frequency')
+        
+            % Add the figure to the PDF
+            add(rpt, Figure(f));
+            close(f);
+        
+            % Audio Duration Histogram
+            add(rpt, Heading2('Audio Duration Distribution'));
+            f = figure('Visible', 'off', 'Position', [100 100 800 600]);
+            audioDur=obj.events_table.audio_ended_natus-obj.events_table.audio_onset_natus;
+            sentence_durations = audioDur(strcmp(obj.condition, 'sentence'));
+            nonword_durations = audioDur(strcmp(obj.condition, 'nonword'));
+            size(sentence_durations)
+            subplot(1,2,1)
+            histogram(sentence_durations, 'BinWidth', 0.1)
+            title('Sentence Audio Duration Distribution')
+            xlabel('Duration (s)')
+            ylabel('Frequency')
+            
+        
+            subplot(1,2,2)
+            histogram(nonword_durations, 'BinWidth', 0.1)
+            title('Nonword Audio Duration Distribution')
+            xlabel('Duration (s)')
+            ylabel('Frequency')
+            
+        
+            figReporter = Figure(f);
+            figReporter.Scaling = 'none';
+            figReporter.Snapshot.ScaleToFit = true;
+            add(rpt, figReporter);
+            close(f);
+        
+            % High Gamma Plot Generation (All trials)
+            conds.A = find(strcmp(obj.condition, 'sentence'));
+            conds.B = find(strcmp(obj.condition, 'nonword'));
+            add(rpt, Heading2('High Gamma Plots (All Trials)'));
+            high_gamma_plot(obj, conds, rpt);
+        
+            % High Gamma Plot Generation (Trials <= 5 seconds)
+            audio_durations = obj.events_table.audio_ended_natus-obj.events_table.audio_onset_natus;
+            valid_trials = audio_durations <= 5;
+            conds.A = find(strcmp(obj.condition, 'sentence') & valid_trials);
+            conds.B = find(strcmp(obj.condition, 'nonword') & valid_trials);
+            add(rpt, Heading2('High Gamma Plots (Trials <= 5 seconds) to control for sentence & nonword trial variability'));
+            high_gamma_plot(obj, conds, rpt);
+        
+            % High Gamma Plot Generation (Accurate Trials <= 5 seconds)
+            audio_durations = obj.events_table.audio_ended_natus-obj.events_table.audio_onset_natus;
+            valid_trials = audio_durations <= 5 & obj.events_table.accuracy == 1;
+            conds.A = find(strcmp(obj.condition, 'sentence') & valid_trials);
+            conds.B = find(strcmp(obj.condition, 'nonword') & valid_trials);
+            add(rpt, Heading2('High Gamma Plots (Accurate Trials <= 5 seconds) to control for sentence & nonword trial variability'));
+            high_gamma_plot(obj, conds, rpt);
+        
+           
     end
-    subplot(1,2,1)
-    histogram(rt_correct(strcmp(cond_correct, 'sentence'))*1000, 'BinWidth', 50)
-    title('Sentence Condition RT Distribution')
-    xlabel('Reaction Time (ms)')
-    ylabel('Frequency')
-
-    subplot(1,2,2)
-    histogram(rt_correct(strcmp(cond_correct, 'nonword'))*1000, 'BinWidth', 50)
-    title('Nonword Condition RT Distribution')
-    xlabel('Reaction Time (ms)')
-    ylabel('Frequency')
-
-    % Add the figure to the PDF
-    add(rpt, Figure(f));
-    close(f);
-
-    % Audio Duration Histogram
-    add(rpt, Heading2('Audio Duration Distribution'));
-    f = figure('Visible', 'off', 'Position', [100 100 800 600]);
-    audioDur=obj.events_table.audio_ended_natus-obj.events_table.audio_onset_natus;
-    sentence_durations = audioDur(strcmp(obj.condition, 'sentence'));
-    nonword_durations = audioDur(strcmp(obj.condition, 'nonword'));
-    size(sentence_durations)
-    subplot(1,2,1)
-    histogram(sentence_durations, 'BinWidth', 0.1)
-    title('Sentence Audio Duration Distribution')
-    xlabel('Duration (s)')
-    ylabel('Frequency')
-    
-
-    subplot(1,2,2)
-    histogram(nonword_durations, 'BinWidth', 0.1)
-    title('Nonword Audio Duration Distribution')
-    xlabel('Duration (s)')
-    ylabel('Frequency')
-    
-
-    figReporter = Figure(f);
-    figReporter.Scaling = 'none';
-    figReporter.Snapshot.ScaleToFit = true;
-    add(rpt, figReporter);
-    close(f);
-
-    % High Gamma Plot Generation (All trials)
-    conds.A = find(strcmp(obj.condition, 'sentence'));
-    conds.B = find(strcmp(obj.condition, 'nonword'));
-    add(rpt, Heading2('High Gamma Plots (All Trials)'));
-    high_gamma_plot(obj, conds, rpt);
-
-    % High Gamma Plot Generation (Trials <= 5 seconds)
-    audio_durations = obj.events_table.audio_ended_natus-obj.events_table.audio_onset_natus;
-    valid_trials = audio_durations <= 5;
-    conds.A = find(strcmp(obj.condition, 'sentence') & valid_trials);
-    conds.B = find(strcmp(obj.condition, 'nonword') & valid_trials);
-    add(rpt, Heading2('High Gamma Plots (Trials <= 5 seconds) to control for sentence & nonword trial variability'));
-    high_gamma_plot(obj, conds, rpt);
-
-    % High Gamma Plot Generation (Accurate Trials <= 5 seconds)
-    audio_durations = obj.events_table.audio_ended_natus-obj.events_table.audio_onset_natus;
-    valid_trials = audio_durations <= 5 & obj.events_table.accuracy == 1;
-    conds.A = find(strcmp(obj.condition, 'sentence') & valid_trials);
-    conds.B = find(strcmp(obj.condition, 'nonword') & valid_trials);
-    add(rpt, Heading2('High Gamma Plots (Accurate Trials <= 5 seconds) to control for sentence & nonword trial variability'));
-    high_gamma_plot(obj, conds, rpt);
-
-    % Add summary report of significant channels
-    add(rpt, Heading1('Summary of Significant Channels'));
-    
-    % Unipolar channels
-    add(rpt, Heading2('Unipolar Channels with Significant Time Clusters'));
-    sigUnipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan));
-    if ~isempty(sigUnipolarChannels)
-        unipolarList = cell(length(sigUnipolarChannels), 1);
-        for i = 1:length(sigUnipolarChannels)
-            unipolarList{i} = obj.elec_ch_label{obj.elec_ch_valid(sigUnipolarChannels(i))};
-        end
-        add(rpt, UnorderedList(unipolarList));
-    else
-        add(rpt, Paragraph('No significant unipolar channels found.'));
-    end
-    
-    % Bipolar channels
-    add(rpt, Heading2('Bipolar Channels with Significant Time Clusters'));
-    sigBipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan_bip));
-    if ~isempty(sigBipolarChannels)
-        bipolarList = cell(length(sigBipolarChannels), 1);
-        for i = 1:length(sigBipolarChannels)
-            bipolarList{i} = obj.bip_ch_label{sigBipolarChannels(i)};
-        end
-        add(rpt, UnorderedList(bipolarList));
-    else
-        add(rpt, Paragraph('No significant bipolar channels found.'));
-    end
-
+     % Add summary report of significant channels
+            add(rpt, Heading1('Summary of Significant Channels'));
+            
+            % Unipolar channels
+            add(rpt, Heading2('Unipolar Channels with Significant Time Clusters'));
+            sigUnipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan));
+            if ~isempty(sigUnipolarChannels)
+                unipolarList = cell(length(sigUnipolarChannels), 1);
+                for i = 1:length(sigUnipolarChannels)
+                    unipolarList{i} = obj.elec_ch_label{obj.elec_ch_valid(sigUnipolarChannels(i))};
+                end
+                add(rpt, UnorderedList(unipolarList));
+            else
+                add(rpt, Paragraph('No significant unipolar channels found.'));
+            end
+            
+            % Bipolar channels
+            add(rpt, Heading2('Bipolar Channels with Significant Time Clusters'));
+            sigBipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan_bip));
+            if ~isempty(sigBipolarChannels)
+                bipolarList = cell(length(sigBipolarChannels), 1);
+                for i = 1:length(sigBipolarChannels)
+                    bipolarList{i} = obj.bip_ch_label{sigBipolarChannels(i)};
+                end
+                add(rpt, UnorderedList(bipolarList));
+            else
+                add(rpt, Paragraph('No significant bipolar channels found.'));
+            end
     % Close the PDF document
     
     

@@ -67,4 +67,10 @@ function events_table = extract_behavioral_events_for_langloc_visual(varargin)
     for word = words
         events_table.(word{1}) = mat_r1r2r3.(word{1});
     end
+
+    % Add accuracy column
+    events_table.accuracy = double(events_table.response == events_table.probe_answer);
+    
+    % Change RT to NaN for incorrect trials
+    events_table.RT(events_table.accuracy == 0) = NaN;
 end

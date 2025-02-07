@@ -16,6 +16,7 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1)
 
     % Define event types for words 1 to 12
     eventTypes = {
+        'fix', bit1 & ~bit2 & bit3 & bit4 & ~bit5;
         'word1', bit1 & ~bit2 & ~bit3 & ~bit4 & ~bit5;
         'word2', ~bit1 & bit2 & ~bit3 & ~bit4 & ~bit5;
         'word3', bit1 & bit2 & ~bit3 & ~bit4 & ~bit5;
@@ -30,7 +31,7 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1)
         'word12', ~bit1 & ~bit2 & bit3 & bit4 & ~bit5;
         'preprobe', ~bit1 & bit2 & bit3 & bit4 & ~bit5;
         'probe', ~bit1 & ~bit2 & ~bit3 & ~bit4 & bit5;
-        
+        'extra_probe', bit1 & bit2 & bit3 & bit4 & ~bit5;
     };
 
     % Find event times for each event type
@@ -46,7 +47,7 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1)
     
 
     % Remove non-consecutive word events (only for words 1-12)
-    allEvents = cell2mat(eventTimes(1:14)');
+    allEvents = cell2mat(eventTimes(1:16)');
     [sortedEvents, sortIndex] = sort(allEvents);
     
     % Sort the event IDs using the same sorting index
@@ -57,12 +58,14 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1)
     diffSortIdsFlip = [0 fliplr([diff(fliplr(sortedEventIds))])];  % Add a 0 at the beginning to maintain length
     
     % Find indices where diffSortIds is either 1 or -13, or diffSortIdsFlip is -1 or 13
-    validIndices = find((diffSortIds == 1 | diffSortIds == -13) | ...
-                        (diffSortIdsFlip == -1 | diffSortIdsFlip == 13));
+    validIndices = find((diffSortIds == 1 | diffSortIds == -15) | ...
+                        (diffSortIdsFlip == -1 | diffSortIdsFlip == 15));
     
     % Filter the events and event IDs
     filteredEvents = sortedEvents(validIndices);
     filteredEventIds = sortedEventIds(validIndices);
+
+   
 
 
     % Reorganize filtered events into a cell array
@@ -70,9 +73,45 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1)
     filteredEventTimes = cell(1, numEventTypes);
 
     % Add filtered word events (1-12)
-    for i = 1:14
+    for i = 1:16
         filteredEventTimes{i} = filteredEvents(filteredEventIds == i);
     end
+
+    % Check if lengths of filteredEventTimes are multiples of 40
+    lengths = cellfun(@length, filteredEventTimes);
+    if any(mod(lengths, 40) ~= 0)
+        % Plot extracted events
+        allExtractedEvents = sort(cell2mat(filteredEventTimes'));
+        figure;
+        stem(allExtractedEvents, ones(size(allExtractedEvents)), 'filled');
+        xlabel('Sample Index');
+        ylabel('Event Occurrence');
+        title('Stem Plot of Extracted Events');
+        grid on;
+
+        % Ask user for exclusion periods
+        disp('The lengths of filteredEventTimes are not multiples of 40.');
+        disp('Please provide exclusion periods as a matrix [start1 end1; start2 end2; ...]:');
+        exclusionPeriods = input('Exclusion periods: ');
+
+        % Apply exclusions
+        for i = 1:size(exclusionPeriods, 1)
+            startIdx = exclusionPeriods(i, 1);
+            endIdx = exclusionPeriods(i, 2);
+            for j = 1:length(filteredEventTimes)
+                filteredEventTimes{j} = filteredEventTimes{j}(~(filteredEventTimes{j} >= startIdx & filteredEventTimes{j} <= endIdx));
+            end
+        end
+
+        % Rerun analysis after exclusions
+        lengths = cellfun(@length, filteredEventTimes);
+    end
+
+    % Ensure all lengths are now multiples of 40
+    if any(mod(lengths, 40) ~= 0)
+        error('Filtered event times still do not satisfy the multiple-of-40 condition after exclusions.');
+    end
+    
     
     % Plot events
     figure;
