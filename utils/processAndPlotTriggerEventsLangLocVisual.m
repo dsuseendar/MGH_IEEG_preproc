@@ -83,7 +83,11 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1)
         % Plot extracted events
         allExtractedEvents = sort(cell2mat(filteredEventTimes'));
         figure;
-        stem(allExtractedEvents, ones(size(allExtractedEvents)), 'filled');
+        hold on;
+        colors = lines(length(filteredEventTimes));
+        for i = 1:length(filteredEventTimes)
+            stem(filteredEventTimes{i}, i * ones(length(filteredEventTimes{i}), 1), 'Color', colors(i, :), 'DisplayName', eventTypes{i, 1});
+        end
         xlabel('Sample Index');
         ylabel('Event Occurrence');
         title('Stem Plot of Extracted Events');

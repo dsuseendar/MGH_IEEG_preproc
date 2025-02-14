@@ -1,4 +1,4 @@
-clear all
+fffclear all
 % close all
 %% InBRAIN LangLoc Pre-processing
 % Kumar Duraivel Spring 2024
@@ -74,7 +74,7 @@ TrigMat1=record(DC_files,:)';%record is the edf file contents
 % across 16 channels, visualizes each channel in separate subplots,
 % and ultimately affects TrigMat1 by transforming its data from numerical
 % trigger states into a binary format with adjusted bit order
-filteredEventTimes = processAndPlotTriggerEvents(TrigMat1);
+filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 % The processAndPlotTriggerEvents function processes TrigMat1 to represent each element's binary state
 % across 16 channels, visualizes each channel in separate colors. It
 % identifies all the trials between start and end runs, and has modules to

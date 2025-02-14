@@ -68,3 +68,5 @@ end
 for nn=2:size(all_events_Table,1)
     events_table=[events_table;all_events_Table{nn}];
 end 
+
+events_table = renamevars(events_table,["final_list","final_condition","final_probe_condition"],["list", "condition", "probe_condition"])

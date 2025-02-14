@@ -1,6 +1,12 @@
 function generateExperimentReport(obj, reportName)
-    % Create a new PDF file
-    pdfFileName = [reportName '.pdf'];
+     % Create the crunched folder if it doesn't exist
+    crunchedFolder = fullfile(obj.crunched_file_path);
+    if ~exist(crunchedFolder, 'dir')
+        mkdir(crunchedFolder);
+    end
+
+    % Create a new PDF file in the crunched folder
+    pdfFileName = fullfile(crunchedFolder, [reportName '.pdf']);
     if exist(pdfFileName, 'file')
         delete(pdfFileName);
     end
@@ -16,7 +22,7 @@ function generateExperimentReport(obj, reportName)
     tp = TitlePage();
     tp.Title = 'Experiment Results Report';
     tp.Subtitle = 'Neural Data Analysis';
-    tp.Author = 'MIT-MGH InBRAIN';
+    tp.Author = 'Kumar Duraivel';
     tp.PubDate = datestr(now, 'dd-mmm-yyyy');
     add(rpt, tp);
 
@@ -58,7 +64,8 @@ function generateExperimentReport(obj, reportName)
 
     switch obj.experiment
 
-        case 'LangLocVisual'
+        case {'LangLocVisual'}
+           
             mean_rt_all = mean(rt_correct, 'omitnan');
             mean_rt_sentence = mean(rt_correct(strcmp(cond_correct, 'sentence')), 'omitnan');
             mean_rt_nonword = mean(rt_correct(strcmp(cond_correct, 'nonword')), 'omitnan');
@@ -105,13 +112,7 @@ function generateExperimentReport(obj, reportName)
             add(rpt, Heading2('High Gamma Plots (All Trials)'));
             high_gamma_plot(obj, conds, rpt);
 
-             % High Gamma Plot Generation (Accurate Trials <= 5 seconds)
             
-            valid_trials =  obj.events_table.accuracy == 1;
-            conds.A = find(strcmp(obj.condition, 'sentence') & valid_trials);
-            conds.B = find(strcmp(obj.condition, 'nonword') & valid_trials);
-            add(rpt, Heading2('High Gamma Plots for Accurate trials only'));
-            high_gamma_plot(obj, conds, rpt);
 
             
         case 'LangLocAudio'
@@ -189,21 +190,6 @@ function generateExperimentReport(obj, reportName)
             add(rpt, Heading2('High Gamma Plots (All Trials)'));
             high_gamma_plot(obj, conds, rpt);
         
-            % High Gamma Plot Generation (Trials <= 5 seconds)
-            audio_durations = obj.events_table.audio_ended_natus-obj.events_table.audio_onset_natus;
-            valid_trials = audio_durations <= 5;
-            conds.A = find(strcmp(obj.condition, 'sentence') & valid_trials);
-            conds.B = find(strcmp(obj.condition, 'nonword') & valid_trials);
-            add(rpt, Heading2('High Gamma Plots (Trials <= 5 seconds) to control for sentence & nonword trial variability'));
-            high_gamma_plot(obj, conds, rpt);
-        
-            % High Gamma Plot Generation (Accurate Trials <= 5 seconds)
-            audio_durations = obj.events_table.audio_ended_natus-obj.events_table.audio_onset_natus;
-            valid_trials = audio_durations <= 5 & obj.events_table.accuracy == 1;
-            conds.A = find(strcmp(obj.condition, 'sentence') & valid_trials);
-            conds.B = find(strcmp(obj.condition, 'nonword') & valid_trials);
-            add(rpt, Heading2('High Gamma Plots (Accurate Trials <= 5 seconds) to control for sentence & nonword trial variability'));
-            high_gamma_plot(obj, conds, rpt);
         
            
     end
@@ -216,7 +202,7 @@ function generateExperimentReport(obj, reportName)
             if ~isempty(sigUnipolarChannels)
                 unipolarList = cell(length(sigUnipolarChannels), 1);
                 for i = 1:length(sigUnipolarChannels)
-                    unipolarList{i} = obj.elec_ch_label{obj.elec_ch_valid(sigUnipolarChannels(i))};
+                    unipolarList{i} = obj.elec_ch_label{sigUnipolarChannels(i)};
                 end
                 add(rpt, UnorderedList(unipolarList));
             else
@@ -235,6 +221,10 @@ function generateExperimentReport(obj, reportName)
             else
                 add(rpt, Paragraph('No significant bipolar channels found.'));
             end
+
+    % Save the updated object in the crunched folder
+    saveUpdatedObject(obj);
+
     % Close the PDF document
     
     
@@ -243,23 +233,51 @@ function generateExperimentReport(obj, reportName)
 end
 
 function high_gamma_plot(obj, conds, rpt)
-  import mlreportgen.report.*
+    import mlreportgen.report.*
     import mlreportgen.dom.*
-    % data epoching
+    
+    % Define LangLoc settings
+    langLocSettings = {
+        'All Trials', conds;
+        'Accurate Trials', struct('A', conds.A(obj.events_table.accuracy(conds.A) == 1), ...
+                                  'B', conds.B(obj.events_table.accuracy(conds.B) == 1));
+    };
+    
+    % Add audio duration condition for LangLocAudio
+    if strcmp(obj.experiment, 'LangLocAudio')
+        audioDur = obj.events_table.audio_ended_natus - obj.events_table.audio_onset_natus;
+        langLocSettings(length(langLocSettings)+1,:) = {'Trials_less_than_5_seconds', ...
+            struct('A', conds.A(audioDur(conds.A) <= 5), ...
+                   'B', conds.B(audioDur(conds.B) <= 5))};
+         langLocSettings(length(langLocSettings)+1,:) = {'Accurate_Trials_less_than_5_seconds', ...
+            struct('A', conds.A(audioDur(conds.A) <= 5 & obj.events_table.accuracy(conds.A) == 1), ...
+                   'B', conds.B(audioDur(conds.B) <= 5 & obj.events_table.accuracy(conds.B) == 1))};
+    end
+
+    % Data epoching
     epochTimeRange = [-0.5 6];
     [epochData, epochData_bip] = obj.extract_trial_epochs('epoch_tw', epochTimeRange, 'selectChannels', obj.elec_ch_clean);
 
-    % Process unipolar data
-    add(rpt, Heading2('Unipolar Data'));
-    process_and_plot_data(obj, epochData, conds, 'unipolar', obj.elec_ch_label(obj.elec_ch_valid), epochTimeRange, rpt);
-    
-    % Process bipolar data
-    if ~isempty(epochData_bip)
-        add(rpt, Heading2('Bipolar Data'));
-        process_and_plot_data(obj, epochData_bip, conds, 'bipolar', obj.bip_ch_label, epochTimeRange, rpt);
+    % Process each LangLoc setting
+    for i = 1:size(langLocSettings, 1)
+        settingName = langLocSettings{i, 1};
+        settingConds = langLocSettings{i, 2};
+        
+        add(rpt, Heading2(['High Gamma Plots: ' settingName]));
+        
+        % Process unipolar data
+        add(rpt, Heading3('Unipolar Data'));
+        obj = process_and_plot_data(obj, epochData, settingConds, 'unipolar', obj.elec_ch_label(obj.elec_ch_valid), epochTimeRange, rpt, settingName);
+        
+        % Process bipolar data
+        if ~isempty(epochData_bip)
+            add(rpt, Heading3('Bipolar Data'));
+            obj = process_and_plot_data(obj, epochData_bip, settingConds, 'bipolar', obj.bip_ch_label, epochTimeRange, rpt, settingName);
+        end
     end
 end
-function process_and_plot_data(obj, data, conds, data_type, chanLab, epochTimeRange, rpt)
+
+function obj = process_and_plot_data(obj, data, conds, data_type, chanLab, epochTimeRange, rpt, settingName)
     data2plot = data;
 
     import mlreportgen.report.*
@@ -277,16 +295,27 @@ function process_and_plot_data(obj, data, conds, data_type, chanLab, epochTimeRa
     numChan = 10; % Number of channels to plot per figure
     totChanBlock = ceil(size(data2plot,1) / numChan);
 
-    % Set figure size to match standard PDF page size (8.5 x 11 inches)
+    % Set figure size to match standard PDF page size
     pdfPageWidth = 10;  % inches
     pdfPageHeight = 12;  % inches
-    figureWidth = pdfPageWidth * 100;  % Convert to a reasonable figure size in pixels
-    figureHeight = pdfPageHeight * 100;  % Convert to a reasonable figure size in pixels
+    figureWidth = pdfPageWidth * 100;  % Convert to pixels
+    figureHeight = pdfPageHeight * 100;  % Convert to pixels
+    
+    % Initialize pSig cell array
+    pSig = cell(1, size(data2plot,1));
+    
     parfor iChan = 1:size(data2plot,1)
         aTrialData = squeeze(data2plot(iChan, aTrials, :));
         bTrialData = squeeze(data2plot(iChan, bTrials, :));
 
         pSig{iChan} = timePermCluster(aTrialData,bTrialData,numTail=1);
+    end
+
+    % Save pSig results in obj.stats
+    if strcmp(data_type, 'unipolar')
+        obj.stats.time_series.(['pSigChan_contrast_' strrep(settingName, ' ', '_')]) = pSig;
+    else
+        obj.stats.time_series.(['pSigChan_bip_contrast_' strrep(settingName, ' ', '_')]) = pSig;
     end
 
     for iF = 0:totChanBlock-1
@@ -388,3 +417,20 @@ function process_and_plot_data(obj, data, conds, data_type, chanLab, epochTimeRa
     end
 
 end
+
+function saveUpdatedObject(obj)
+    % Create the crunched folder if it doesn't exist
+    crunchedFolder = fullfile(obj.crunched_file_path);
+    if ~exist(crunchedFolder, 'dir')
+        mkdir(crunchedFolder);
+    end
+
+    % Generate the filename
+    filename = fullfile(crunchedFolder, [obj.subject '_' obj.experiment '_crunched_HG_ZScore.mat']);
+
+    % Save the object
+    save(filename, 'obj', '-v7.3');
+    
+    fprintf('Updated object saved as: %s\n', filename);
+end
+
