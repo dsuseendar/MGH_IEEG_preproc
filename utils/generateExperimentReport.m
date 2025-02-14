@@ -64,7 +64,7 @@ function generateExperimentReport(obj, reportName)
 
     switch obj.experiment
 
-        case {'LangLocVisual'}
+        case {'LangLocVisual','LangLoc'}
            
             mean_rt_all = mean(rt_correct, 'omitnan');
             mean_rt_sentence = mean(rt_correct(strcmp(cond_correct, 'sentence')), 'omitnan');
