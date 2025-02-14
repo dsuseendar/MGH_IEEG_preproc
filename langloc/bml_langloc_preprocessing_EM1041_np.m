@@ -1,7 +1,7 @@
 clear all
 % close all
 %% BML LangLoc Pre-processing
-%  Ashley Walton Spring 2024
+%  Kumar Duraivel Spring 2024
 % This script is designed for quick pre-processing of language localizer
 % data, which will usually be performed locally because connection to the
 % server over VPN is too slow. Then it will be copied onto Nexus4
@@ -16,8 +16,8 @@ clear all
 % rigs.
 %% DEFINE VARIABLES
 DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
-SUBJECT='sub-EM1271';
-SESSION = 'LangLocVisual';
+SUBJECT='sub-EM1041';
+SESSION = 'LangLoc';
 MODALITY='visual';
 
 %% LOAD NEW UTILITIES FOLDER
@@ -89,7 +89,7 @@ trialTimingOnset = filteredEventTimes{1};
 % The filteredEventTimes is of the same order as TrigMat. All we need is
 % filteredEventTimes{2}
 
-assert(length(trialTimingOnset)==120,'Failed trigger condition; Try the less automated approach');
+assert(length(trialTimingOnset)==80,'Failed trigger condition; Try the less automated approach');
 
 
 
@@ -100,13 +100,13 @@ assert(length(trialTimingOnset)==120,'Failed trigger condition; Try the less aut
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
 %This was manually excluding events files for runs that were not completed
-%task_files_to_pick=[2:4];
-%d_events=d_events(task_files_to_pick);
+task_files_to_pick=[2:3];
+d_events=d_events(task_files_to_pick);
 
 
 [events_table] = extract_behavioral_events_for_langloc_visual('behavior_files',d_events,'sampling',unique(sampling_frequency));
 % check if there are the correct number of trials (120)
-assert(size(events_table,1)==120);
+assert(size(events_table,1)==80);
 
 
 %% Checking Behavior recordings with Natus recordings
@@ -168,7 +168,7 @@ for_preproc.decimation_freq = sampling_frequency(1)/4;
 
 obj = ecog_data(for_preproc,subject,experiment,save_filename,save_path,d_files,...
     PATH_EDF,ch_labels(ch_select),1:length(ch_select),[],ch_type(ch_select));
-obj.preprocess_signal('order',order,'isPlotVisible',true,'doneVisualInspection',false);
+obj.preprocess_signal('order',order,'isPlotVisible',false,'doneVisualInspection',false);
 obj.events_table = obj.for_preproc.event_table;
 obj.condition = cellfun(@(x) replace(x, {'S', 'N'}, {'sentence', 'nonword'}), obj.for_preproc.event_table.condition, 'UniformOutput', false);
 
@@ -204,6 +204,6 @@ obj.extract_normalization_metrics();
 % Normalize the signal using z-score method
 obj.normalize_signal("normtype", 'z-score');
 
-%% Generate the report
+% Generate the report
 
-generateExperimentReport(obj, 'EM1271-langloc')
+generateExperimentReport(obj, [subject '_' experiment])

@@ -1,24 +1,14 @@
 clear all
 % close all
 %% BML LangLoc Pre-processing
-%  Ashley Walton Spring 2024
-% This script is designed for quick pre-processing of language localizer
-% data, which will usually be performed locally because connection to the
-% server over VPN is too slow. Then it will be copied onto Nexus4
+%  Kumar Duraivel Spring 2024
 
 %% NOTES ON PROCESSING THIS PATIENT
-% You had issues with the triggers because the bits were switched where
-% bit3 is end_exp and bit2 is start_audio (in prevoius task data this was
-% switched). You created a new version of the
-% extract_timing_for_langloc_audio.m for this purpose
-% It is not necessarily true that this will be true moving forward, Alan
-% said there are possibly different versions of this task on different
-% rigs.
 %% DEFINE VARIABLES
 DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
-SUBJECT='sub-EM1271';
-SESSION = 'LangLocVisual';
-MODALITY='visual';
+SUBJECT='sub-EM1054';
+SESSION = 'LangLocAudio';
+MODALITY='audio';
 
 %% LOAD NEW UTILITIES FOLDER
 % Specify the folder containing Utilities
@@ -32,7 +22,7 @@ addpath(genpath(utils_folder));
 PATH_DATA = [DATAPATH filesep 'raw_data' filesep SUBJECT filesep];
 PATH_SESSION = [PATH_DATA filesep 'ses-' SESSION];
 PATH_EDF = [PATH_SESSION filesep 'natus' ];
-PATH_EVENTS = [PATH_SESSION filesep 'task' ];
+PATH_EVENTS = [PATH_SESSION filesep 'tasks' ];
 PATH_DER = [DATAPATH filesep 'derivatives'];
 PATH_ANNOT = [PATH_DER filesep SUBJECT '/annot/'];
 PATH_SAVE = [PATH_DER filesep SUBJECT '/preproc/'];
@@ -76,7 +66,7 @@ TrigMat1=record(DC_files,:)';%record is the edf file contents
 % across 16 channels, visualizes each channel in separate subplots,
 % and ultimately affects TrigMat1 by transforming its data from numerical
 % trigger states into a binary format with adjusted bit order
-filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1);
+filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 % The processAndPlotTriggerEvents function processes TrigMat1 to represent each element's binary state
 % across 16 channels, visualizes each channel in separate colors. It
 % identifies all the trials between start and end runs, and has modules to
@@ -85,7 +75,7 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1);
 % trigger states into a binary format with adjusted bit order. The code is
 % automated, it doesnt' require any prefix or exclusion period
 
-trialTimingOnset = filteredEventTimes{1};
+trialTimingOnset = filteredEventTimes{3};
 % The filteredEventTimes is of the same order as TrigMat. All we need is
 % filteredEventTimes{2}
 
@@ -100,45 +90,53 @@ assert(length(trialTimingOnset)==120,'Failed trigger condition; Try the less aut
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
 %This was manually excluding events files for runs that were not completed
-%task_files_to_pick=[2:4];
-%d_events=d_events(task_files_to_pick);
+task_files_to_pick=[1:3];
+d_events=d_events(task_files_to_pick);
 
 
-[events_table] = extract_behavioral_events_for_langloc_visual('behavior_files',d_events,'sampling',unique(sampling_frequency));
+[events_table] = extract_behavioral_events_for_langloc_audio('behavior_files',d_events,'sampling',unique(sampling_frequency));
 % check if there are the correct number of trials (120)
 assert(size(events_table,1)==120);
 
 
 %% Checking Behavior recordings with Natus recordings
-time2save = trialTimingOnset(1)-30*sampling_frequency:trialTimingOnset(end)+30*sampling_frequency;
+time2save = filteredEventTimes{3}(1)-15*sampling_frequency:filteredEventTimes{3}(end)+15*sampling_frequency; % saving just the necessary folder
 timeStart = time2save(1);
-natusTrialStart = (trialTimingOnset-timeStart)./sampling_frequency(1);
-natusAudioEnd = (filteredEventTimes{10}-timeStart)./sampling_frequency(1);
-% natusTimingProbe = (filteredEventTimes{6}-timeStart)./sampling_frequency(1);
-% natusEndProbe = (filteredEventTimes{14}-timeStart)./sampling_frequency(1);
-behTimingOnset = events_table.actual_onset;
+natusAudioStart = (filteredEventTimes{3}-timeStart)./sampling_frequency(1);
+natusAudioEnd = (filteredEventTimes{5}-timeStart)./sampling_frequency(1);
+natusTimingProbe = (filteredEventTimes{6}-timeStart)./sampling_frequency(1);
+natusEndProbe = (filteredEventTimes{14}-timeStart)./sampling_frequency(1);
+behTimingOnset = events_table.trial_onset;
+behTimingOffset = events_table.audio_ended;
+audioDurNatus = natusAudioEnd-natusAudioStart;
+audioDurBeh = behTimingOffset-behTimingOnset;
 
-% audioDurNatus = natusAudioEnd-natusTrialStart;
-% audioDurBeh = behTimingOffset-behTimingOnset;
+isiNatus = [diff(natusAudioStart(1:40)); diff(natusAudioStart(41:80)); diff(natusAudioStart(81:120))];
+isiBeh = [diff(behTimingOnset(1:40)); diff(behTimingOnset(41:80)); diff(behTimingOnset(81:120))];
 
-isiNatus = [diff(natusTrialStart(1:40)); diff(natusTrialStart(41:80))];
-isiBeh = [diff(behTimingOnset(1:40)); diff(behTimingOnset(41:80))];
-
-%figure; scatter(isiNatus,isiBeh,20,'black','filled'); % Should look correlated
-figure; histogram(isiNatus-isiBeh,50); %The distribution must be close to 0
+figure; scatter(audioDurNatus,audioDurBeh,20,'black','filled'); % Should look correlated
+figure; histogram(audioDurNatus-audioDurBeh,50); %The distribution must be close to 0
 xlabel('Discrepancy in time (s)')
 ylabel('Trials');
 
-% events_table.trial_onset_natus = natusTrialStart - 0.2;
-% events_table.audio_onset_natus = natusTrialStart;
-% events_table.audio_ended_natus = natusAudioEnd;
-% events_table.probe_onset_natus = natusTimingProbe;
-% events_table.trial_ended_natus = natusEndProbe+0.2;
+events_table.trial_onset_natus = natusAudioStart - 0.2;
+events_table.audio_onset_natus = natusAudioStart;
+events_table.audio_ended_natus = natusAudioEnd;
+events_table.probe_onset_natus = natusTimingProbe;
+events_table.trial_ended_natus = natusEndProbe+0.2;
 
 %time2save = trialTimingOnset(1)-15*sampling_frequency:trialTimingOnset(end)+15*sampling_frequency;
 
-%% FOR VISUAL LANGLOC
-[trial_timing] = get_timing_for_LangLocVideo(filteredEventTimes,events_table,timeStart);
+%% FOR AUDIO LANGLOC, ALIGN AUDIO WITH WAVELET
+with_wavelet=false;
+% save data as an object for ease of further processing
+
+audio_align_path='./audio_alignment/stimuli_alignment_handfix';
+% This needs to be properly defined from within the
+% trial_timing_from_json_files... function (how to make this globally
+% available?
+audio_path='./audio_alignment/stimuli';
+trial_timing=get_timing_from_json_files_LangLocAudio_Optim(events_table,audio_align_path,with_wavelet,sampling_frequency(1));
 
 
 %% WRITING ECOG DATA STRUCTURE
@@ -168,7 +166,7 @@ for_preproc.decimation_freq = sampling_frequency(1)/4;
 
 obj = ecog_data(for_preproc,subject,experiment,save_filename,save_path,d_files,...
     PATH_EDF,ch_labels(ch_select),1:length(ch_select),[],ch_type(ch_select));
-obj.preprocess_signal('order',order,'isPlotVisible',true,'doneVisualInspection',false);
+obj.preprocess_signal('order',order,'isPlotVisible',false,'doneVisualInspection',false);
 obj.events_table = obj.for_preproc.event_table;
 obj.condition = cellfun(@(x) replace(x, {'S', 'N'}, {'sentence', 'nonword'}), obj.for_preproc.event_table.condition, 'UniformOutput', false);
 
@@ -183,14 +181,14 @@ end
 
 save([save_path filesep save_filename],'obj','-v7.3');
 
-%% Extract HG data
+% Extract HG data
 
 
 % Extract high gamma components using NapLab filter extraction
 obj.extract_high_gamma('doNapLabFilterExtraction', true);
 
 % Downsample the signal to 200 Hz
-obj.downsample_signal('decimationFreq', 200);
+obj.downsample_signal('decimationFreq', 100);
 
 % Extract significant channels from the signal
 obj.extract_significant_channel();
@@ -204,6 +202,6 @@ obj.extract_normalization_metrics();
 % Normalize the signal using z-score method
 obj.normalize_signal("normtype", 'z-score');
 
-%% Generate the report
+% Generate the report
 
-generateExperimentReport(obj, 'EM1271-langloc')
+generateExperimentReport(obj, [subject '_' experiment])
