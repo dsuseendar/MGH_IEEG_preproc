@@ -38,7 +38,7 @@ function channels_table = create_channels_table_bids(edfinfo, PATH_ANNOT, SUBJEC
     
     % Define bipolar reference channels
     channels_table.reference_bipolar = [channels_table.name(2:end); "n/a"];
-    channels_table.reference_bipolar(channels_table.type ~= "SEEG" | ...
+    channels_table.reference_bipolar(channels_table.type ~= "seeg" | ...
                                      channels_table.group ~= [channels_table.group(2:end); "n/a"]) = "n/a";
     
     % Write channels table to annot folder
