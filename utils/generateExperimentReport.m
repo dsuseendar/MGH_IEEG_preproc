@@ -244,19 +244,28 @@ function high_gamma_plot(obj, conds, rpt)
     };
     
     % Add audio duration condition for LangLocAudio
-    if strcmp(obj.experiment, 'LangLocAudio')
-        audioDur = obj.events_table.audio_ended_natus - obj.events_table.audio_onset_natus;
-        langLocSettings(length(langLocSettings)+1,:) = {'Trials_less_than_5_seconds', ...
-            struct('A', conds.A(audioDur(conds.A) <= 5), ...
-                   'B', conds.B(audioDur(conds.B) <= 5))};
-         langLocSettings(length(langLocSettings)+1,:) = {'Accurate_Trials_less_than_5_seconds', ...
-            struct('A', conds.A(audioDur(conds.A) <= 5 & obj.events_table.accuracy(conds.A) == 1), ...
-                   'B', conds.B(audioDur(conds.B) <= 5 & obj.events_table.accuracy(conds.B) == 1))};
-    end
+    % if strcmp(obj.experiment, 'LangLocAudio')
+    %     audioDur = obj.events_table.audio_ended_natus - obj.events_table.audio_onset_natus;
+    %     langLocSettings(length(langLocSettings)+1,:) = {'Trials_less_than_5_seconds', ...
+    %         struct('A', conds.A(audioDur(conds.A) <= 5), ...
+    %                'B', conds.B(audioDur(conds.B) <= 5))};
+    %      langLocSettings(length(langLocSettings)+1,:) = {'Accurate_Trials_less_than_5_seconds', ...
+    %         struct('A', conds.A(audioDur(conds.A) <= 5 & obj.events_table.accuracy(conds.A) == 1), ...
+    %                'B', conds.B(audioDur(conds.B) <= 5 & obj.events_table.accuracy(conds.B) == 1))};
+    % end
 
     % Data epoching
     epochTimeRange = [-0.5 6];
     [epochData, epochData_bip] = obj.extract_trial_epochs('epoch_tw', epochTimeRange, 'selectChannels', obj.elec_ch_clean);
+    
+    for iTrial = 1:size(epochData, 2)
+        audioDurSample = obj.trial_timing{iTrial,:}.end(13)-obj.trial_timing{iTrial,:}.start(1)-epochTimeRange(1)*obj.sample_freq;
+        mask = false(size(epochData, 3), 1);
+        mask(audioDurSample+1:end) = true;
+        
+        epochData(:, iTrial, mask) = NaN;
+        epochData_bip(:, iTrial, mask) = NaN;
+    end
 
     % Process each LangLoc setting
     for i = 1:size(langLocSettings, 1)
@@ -349,9 +358,24 @@ function obj = process_and_plot_data(obj, data, conds, data_type, chanLab, epoch
                 trialMean = nanmean(trialData, 1);
                 trialSEM = nanstd(trialData, 0, 1) / sqrt(size(trialData, 1));
                 
-                patch([x fliplr(x)], [trialMean+trialSEM fliplr(trialMean-trialSEM)], ...
+                % patch([x fliplr(x)], [trialMean+trialSEM fliplr(trialMean-trialSEM)], ...
+                %       trialColor, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+                % plot(x, trialMean, 'Color', trialColor, 'LineWidth', 1);
+
+                % Find valid (non-NaN) indices
+                validIndices = ~isnan(trialMean) & ~isnan(trialSEM);
+                
+                % Extract valid data
+                trialMean_cleaned = trialMean(validIndices);
+                trialSEM_cleaned = trialSEM(validIndices);
+                x_cleaned = x(validIndices);
+                
+                % Create the patch
+                patch([x_cleaned fliplr(x_cleaned)], [trialMean_cleaned + trialSEM_cleaned fliplr(trialMean_cleaned - trialSEM_cleaned)], ...
                       trialColor, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-                plot(x, trialMean, 'Color', trialColor, 'LineWidth', 1);
+                % plot the mean
+                plot(x_cleaned, trialMean_cleaned, 'Color', trialColor, 'LineWidth', 1);
+
             end
             % Plot significance markers and horizontal line
             if strcmp(data_type, 'unipolar')
