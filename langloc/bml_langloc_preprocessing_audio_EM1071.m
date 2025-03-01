@@ -7,7 +7,7 @@ close all
 %% DEFINE VARIABLES
 DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
 SUBJECT='sub-EM1071';
-SESSION = 'LangLocAudio-2';
+SESSION = 'LangLocAudio';
 MODALITY='audio';
 
 %% LOAD NEW UTILITIES FOLDER
@@ -89,13 +89,13 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
 %This was manually excluding events files for runs that were not completed
-task_files_to_pick=[1];
+task_files_to_pick=[1:2];
 d_events=d_events(task_files_to_pick);
 
 
 [events_table] = extract_behavioral_events_for_langloc_audio('behavior_files',d_events,'sampling',unique(sampling_frequency));
 % check if there are the correct number of trials (120)
-assert(size(events_table,1)==40);
+assert(size(events_table,1)==80);
 
 
 
@@ -232,23 +232,23 @@ end
 % Save the ecog_data object
 save([save_path filesep save_filename],'obj','-v7.3');
 
-% Extract high gamma components using NapLab filter extraction
-obj.extract_high_gamma('doNapLabFilterExtraction', true);
-
-% Downsample the signal to 100 Hz
-obj.downsample_signal('decimationFreq', 100);
-
-% Extract significant channels from the signal
-obj.extract_significant_channel();
-
-% Determine time-based significance of the signal
-obj.extract_time_significance();
-
-% Calculate metrics for signal normalization
-obj.extract_normalization_metrics();
-
-% Normalize the signal using z-score method
-obj.normalize_signal("normtype", 'z-score');
-
-% Generate the experiment report
-generateExperimentReport(obj, [subject '_' experiment]);
+% % Extract high gamma components using NapLab filter extraction
+% obj.extract_high_gamma('doNapLabFilterExtraction', true);
+% 
+% % Downsample the signal to 100 Hz
+% obj.downsample_signal('decimationFreq', 100);
+% 
+% % Extract significant channels from the signal
+% obj.extract_significant_channel();
+% 
+% % Determine time-based significance of the signal
+% obj.extract_time_significance();
+% 
+% % Calculate metrics for signal normalization
+% obj.extract_normalization_metrics();
+% 
+% % Normalize the signal using z-score method
+% obj.normalize_signal("normtype", 'z-score');
+% 
+% % Generate the experiment report
+% generateExperimentReport(obj, [subject '_' experiment]);

@@ -22,12 +22,39 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1)
         allEvents = [allEvents; eventTimes{ch}, repmat(ch, length(eventTimes{ch}), 1)];
     end
 
+    % Remove overlapping events across first 8 channels, preserve events for next 16 channels
+    % overlap_threshold = 10; % Define overlap threshold (e.g., 10 samples)
+    % cleanedEvents = [];
+    % prevTime = -inf; % Initialize with a very small value
+    % for i = 1:size(allEvents, 1)
+    %     currentTime = allEvents(i, 1);
+    %     currentChannel = allEvents(i, 2);
+    % 
+    %     if currentChannel <= 6
+    %         % For first 8 channels, remove overlapping events
+    %         if (currentTime - prevTime) >= overlap_threshold
+    %             cleanedEvents = [cleanedEvents; allEvents(i, :)];
+    %             prevTime = currentTime;
+    %         end
+    %     else
+    %         % For channels 9-24, preserve all events
+    %         cleanedEvents = [cleanedEvents; allEvents(i, :)];
+    %     end
+    % end
+
+cleanedEvents = allEvents;
+   % Separate filtered events back into channels
+    cleanedEventTimes = cell(1, 16);
+    for ch = 1:16
+        cleanedEventTimes{ch} = cleanedEvents(cleanedEvents(:, 2) == ch, 1);
+    end
+
     % Plot events for channels 1-8
     figure;
     hold on;
     colors = lines(16);
     for i = 1:8
-        stem(eventTimes{i}, i * ones(length(eventTimes{i}), 1), 'Color', colors(i, :));
+        stem(cleanedEventTimes{i}, i * ones(length(cleanedEventTimes{i}), 1), 'Color', colors(i, :));
     end
     xlabel('Sample Index');
     ylabel('Event Type');
@@ -38,7 +65,7 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1)
     figure;
     hold on;
     for i = 9:16
-        stem(eventTimes{i}, (i-8) * ones(length(eventTimes{i}), 1), 'Color', colors(i, :));
+        stem(cleanedEventTimes{i}, (i-8) * ones(length(cleanedEventTimes{i}), 1), 'Color', colors(i, :));
     end
     xlabel('Sample Index');
     ylabel('Event Type');
@@ -58,12 +85,12 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1)
 
     % Apply exclusions to allEvents
     for i = 1:size(exclusionPeriods, 1)
-        allEvents = allEvents(allEvents(:,1) < exclusionPeriods(i,1) | allEvents(:,1) > exclusionPeriods(i,2), :);
+        cleanedEvents = cleanedEvents(cleanedEvents(:,1) < exclusionPeriods(i,1) | cleanedEvents(:,1) > exclusionPeriods(i,2), :);
     end
 
 
     % Sort all events by timestamp
-    allEvents = sortrows(allEvents, 1);
+    cleanedEvents = sortrows(cleanedEvents, 1);
 
    % % Remove overlapping events across first 8 channels, preserve events for next 16 channels
    %  overlap_threshold = 10; % Define overlap threshold (e.g., 10 samples)
@@ -85,7 +112,9 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1)
    %      end
    %  end
 
-   cleanedEvents = allEvents;
+
+
+ %  cleanedEvents = allEvents;
 
      % Prompt user for start and end run IDs
     startRunId = input('Enter the start run ID: ');

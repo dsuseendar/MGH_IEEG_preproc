@@ -1,0 +1,79 @@
+
+Starting run at 12:35:51 PM 
+
+Confiuration struture:
+      SESSION_LABEL: 'EMU'
+            SUBJECT: 'testing'
+          PATH_TASK: '%USERPROFILE%U01_langloc_vJan2021'
+    PATH_SOURCEDATA: 'output'
+      SEND_TRIGGERS: 0
+               TASK: 'langloc'
+      TASK_FUNCTION: 'U01_langloc_vJan2021.m'
+             RUN_ID: 0
+           PATH_LOG: 'output/testing'
+          BASE_NAME: 'sub-testing_ses-EMU_task-langloc_run-00_'
+       LOG_FILENAME: 'output/testing/sub-testing_ses-EMU_task-langloc_run-00_log.txt'
+     EVENT_FILENAME: 'output/testing/sub-testing_ses-EMU_task-langloc_run-00_events'
+
+PTB-INFO: Installation of the PsychtoolboxKernelDriver is strongly recommended if you care about precise visual
+PTB-INFO: onset timestamping or timing. See 'help PsychtoolboxKernelDriver' for installation instructions.
+<a href="matlab: opentoline('/Users/hsmall/Dropbox (MIT)/0_projects/eCog/stimulus_scripts/MIT_U01_experiments/U01_langloc_vJan2021/U01_langloc_vJan2021.m',570,1)">570 </a>    end
+if system_dependent('IsDebugMode')==1, dbcont; end
+if system_dependent('IsDebugMode')==1, dbcont; end
+if system_dependent('IsDebugMode')==1, dbcont; end
+if system_dependent('IsDebugMode')==1, dbcont; end
+The identifier was:
+There was an error! The message was:
+Experiment quit by pressing ESCAPE\n
+Starting run at 12:37:46 PM 
+
+Confiuration struture:
+      SESSION_LABEL: 'EMU'
+            SUBJECT: 'testing'
+          PATH_TASK: '%USERPROFILE%U01_langloc_vJan2021'
+    PATH_SOURCEDATA: 'output'
+      SEND_TRIGGERS: 0
+               TASK: 'langloc'
+      TASK_FUNCTION: 'U01_langloc_vJan2021.m'
+             RUN_ID: 0
+           PATH_LOG: 'output/testing'
+          BASE_NAME: 'sub-testing_ses-EMU_task-langloc_run-00_'
+       LOG_FILENAME: 'output/testing/sub-testing_ses-EMU_task-langloc_run-00_log.txt'
+     EVENT_FILENAME: 'output/testing/sub-testing_ses-EMU_task-langloc_run-00_events'
+
+
+This subject has partially completed this list.
+Press 1 to resume. Press 2 to restart.
+1
+Resuming list 0 at trial 6 
+PTB-INFO: Installation of the PsychtoolboxKernelDriver is strongly recommended if you care about precise visual
+PTB-INFO: onset timestamping or timing. See 'help PsychtoolboxKernelDriver' for installation instructions.
+The identifier was:
+There was an error! The message was:
+Experiment quit by pressing ESCAPE\n
+Starting run at 12:39:08 PM 
+
+Confiuration struture:
+      SESSION_LABEL: 'EMU'
+            SUBJECT: 'testing'
+          PATH_TASK: '%USERPROFILE%U01_langloc_vJan2021'
+    PATH_SOURCEDATA: 'output'
+      SEND_TRIGGERS: 0
+               TASK: 'langloc'
+      TASK_FUNCTION: 'U01_langloc_vJan2021.m'
+             RUN_ID: 0
+           PATH_LOG: 'output/testing'
+          BASE_NAME: 'sub-testing_ses-EMU_task-langloc_run-00_'
+       LOG_FILENAME: 'output/testing/sub-testing_ses-EMU_task-langloc_run-00_log.txt'
+     EVENT_FILENAME: 'output/testing/sub-testing_ses-EMU_task-langloc_run-00_events'
+
+
+This subject has partially completed this list.
+Press 1 to resume. Press 2 to restart.
+2
+Restarting list 0 
+PTB-INFO: Installation of the PsychtoolboxKernelDriver is strongly recommended if you care about precise visual
+PTB-INFO: onset timestamping or timing. See 'help PsychtoolboxKernelDriver' for installation instructions.
+The identifier was:
+There was an error! The message was:
+Experiment quit by pressing ESCAPE\n

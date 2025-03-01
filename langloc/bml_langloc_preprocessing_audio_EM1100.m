@@ -229,26 +229,26 @@ if(~isfolder(save_path))
     mkdir(save_path)
 end
 
-% Save the ecog_data object
-save([save_path filesep save_filename],'obj','-v7.3');
-
-% Extract high gamma components using NapLab filter extraction
-obj.extract_high_gamma('doNapLabFilterExtraction', true);
-
-% Downsample the signal to 100 Hz
-obj.downsample_signal('decimationFreq', 100);
-
-% Extract significant channels from the signal
-obj.extract_significant_channel();
-
-% Determine time-based significance of the signal
-obj.extract_time_significance();
-
-% Calculate metrics for signal normalization
-obj.extract_normalization_metrics();
-
-% Normalize the signal using z-score method
-obj.normalize_signal("normtype", 'z-score');
-
-% Generate the experiment report
-generateExperimentReport(obj, [subject '_' experiment]);
+% % Save the ecog_data object
+% save([save_path filesep save_filename],'obj','-v7.3');
+% 
+% % Extract high gamma components using NapLab filter extraction
+% obj.extract_high_gamma('doNapLabFilterExtraction', true);
+% 
+% % Downsample the signal to 100 Hz
+% obj.downsample_signal('decimationFreq', 100);
+% 
+% % Extract significant channels from the signal
+% obj.extract_significant_channel();
+% 
+% % Determine time-based significance of the signal
+% obj.extract_time_significance();
+% 
+% % Calculate metrics for signal normalization
+% obj.extract_normalization_metrics();
+% 
+% % Normalize the signal using z-score method
+% obj.normalize_signal("normtype", 'z-score');
+% 
+% % Generate the experiment report
+% generateExperimentReport(obj, [subject '_' experiment]);

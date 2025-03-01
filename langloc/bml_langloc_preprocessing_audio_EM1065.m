@@ -7,7 +7,7 @@ close all
 %% DEFINE VARIABLES
 DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
 SUBJECT='sub-EM1065';
-SESSION = 'LangLocAudio-2';
+SESSION = 'LangLocAudio';
 MODALITY='audio';
 
 %% LOAD NEW UTILITIES FOLDER
@@ -22,7 +22,7 @@ addpath(genpath(utils_folder));
 PATH_DATA = [DATAPATH filesep 'raw_data' filesep SUBJECT filesep];
 PATH_SESSION = [PATH_DATA filesep 'ses-' SESSION];
 PATH_EDF = [PATH_SESSION filesep 'natus' ];
-PATH_EVENTS = [PATH_SESSION filesep 'task' ];
+PATH_EVENTS = [PATH_SESSION filesep 'tasks' ];
 PATH_DER = [DATAPATH filesep 'derivatives'];
 PATH_ANNOT = [PATH_DER filesep SUBJECT '/annot/'];
 PATH_SAVE = [PATH_DER filesep SUBJECT '/preproc/'];
@@ -118,25 +118,25 @@ natusTimingProbe = (filteredEventTimes{6}-timeStart)./sampling_frequency(1);
 % Calculate the probe end times from the Natus system, normalized to timeStart
 natusEndProbe = (filteredEventTimes{14}-timeStart)./sampling_frequency(1);
 
-% Extract the trial onset times from the behavioral data
-behTimingOnset = events_table.trial_onset;
-
-% Extract the audio end times from the behavioral data
-behTimingOffset = events_table.audio_ended;
-
-% Calculate the audio duration based on Natus timing
-audioDurNatus = natusAudioEnd-natusAudioStart;
-
-% Calculate the audio duration based on behavioral timing
-audioDurBeh = behTimingOffset-behTimingOnset;
-
-% Create a scatter plot to compare Natus and behavioral audio durations
-figure; scatter(audioDurNatus,audioDurBeh,20,'black','filled');
-
-% Create a histogram of the differences between Natus and behavioral audio durations
-figure; histogram(audioDurNatus-audioDurBeh,50);
-xlabel('Discrepancy in time (s)')
-ylabel('Trials');
+% % Extract the trial onset times from the behavioral data
+% behTimingOnset = events_table.trial_onset;
+% 
+% % Extract the audio end times from the behavioral data
+% behTimingOffset = events_table.audio_ended;
+% 
+% % Calculate the audio duration based on Natus timing
+% audioDurNatus = natusAudioEnd-natusAudioStart;
+% 
+% % Calculate the audio duration based on behavioral timing
+% audioDurBeh = behTimingOffset-behTimingOnset;
+% 
+% % Create a scatter plot to compare Natus and behavioral audio durations
+% figure; scatter(audioDurNatus,audioDurBeh,20,'black','filled');
+% 
+% % Create a histogram of the differences between Natus and behavioral audio durations
+% figure; histogram(audioDurNatus-audioDurBeh,50);
+% xlabel('Discrepancy in time (s)')
+% ylabel('Trials');
 
 % Add Natus-based timing information to the events table, adjusting for
 % known fixation
@@ -229,26 +229,26 @@ if(~isfolder(save_path))
     mkdir(save_path)
 end
 
-% Save the ecog_data object
-save([save_path filesep save_filename],'obj','-v7.3');
-
-% Extract high gamma components using NapLab filter extraction
-obj.extract_high_gamma('doNapLabFilterExtraction', true);
-
-% Downsample the signal to 100 Hz
-obj.downsample_signal('decimationFreq', 100);
-
-% Extract significant channels from the signal
-obj.extract_significant_channel();
-
-% Determine time-based significance of the signal
-obj.extract_time_significance();
-
-% Calculate metrics for signal normalization
-obj.extract_normalization_metrics();
-
-% Normalize the signal using z-score method
-obj.normalize_signal("normtype", 'z-score');
-
-% Generate the experiment report
-generateExperimentReport(obj, [subject '_' experiment]);
+% % Save the ecog_data object
+% save([save_path filesep save_filename],'obj','-v7.3');
+% 
+% % Extract high gamma components using NapLab filter extraction
+% obj.extract_high_gamma('doNapLabFilterExtraction', true);
+% 
+% % Downsample the signal to 100 Hz
+% obj.downsample_signal('decimationFreq', 100);
+% 
+% % Extract significant channels from the signal
+% obj.extract_significant_channel();
+% 
+% % Determine time-based significance of the signal
+% obj.extract_time_significance();
+% 
+% % Calculate metrics for signal normalization
+% obj.extract_normalization_metrics();
+% 
+% % Normalize the signal using z-score method
+% obj.normalize_signal("normtype", 'z-score');
+% 
+% % Generate the experiment report
+% generateExperimentReport(obj, [subject '_' experiment]);

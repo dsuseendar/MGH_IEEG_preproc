@@ -28,31 +28,36 @@ all_react_time=[];
 all_trial_comp=[];
 all_block_id=[];
 all_events_Table={};
-for nn=1:size(d_events)
-    event_name=strrep(d_events(nn).name,'._','');
-    event_table=readtable(strcat(d_events(nn).folder,'/',event_name));
-    tags=event_table.trial_onset*sampling_freq;
-    all_events_Table{nn,1}=[event_table];
-    condition=event_table.final_condition;
-    non_fixation=find(~strcmp(condition,'F'));
-    string=event_table.final_audio_transcript;
-    audio_filename=event_table.final_audio_filename;
-    probe_ans=event_table.final_probe;
-    resp_ans=event_table.response;
-    %reaction_time=event_table.RT;
-    trial_complete=event_table.trial_completed;
+ for nn=1:size(d_events)
+     event_name=strrep(d_events(nn).name,'._','');
+     event_table=readtable(strcat(d_events(nn).folder,'/',event_name));
+%     tags=event_table.trial_onset*sampling_freq;
     
-    all_tags=[all_tags;tags(non_fixation)];
-    all_condition=[all_condition;condition(non_fixation)];
-    all_strings=[all_strings;string(non_fixation)];
-    all_probe_ans=[all_probe_ans;probe_ans(non_fixation)];
-    all_audio_filenames=[all_audio_filenames;audio_filename(non_fixation)];
-    all_resp_ans=[all_resp_ans;resp_ans(non_fixation)];
-    %all_react_time=[all_react_time;reaction_time(non_fixation)];
-    all_trial_comp=[all_trial_comp;trial_complete(non_fixation)];
-    all_block_id=[all_block_id;trial_complete(non_fixation)*0+nn];
-    
-end
+    try
+        condition=event_table.final_condition;
+    catch
+        condition=event_table.condition;
+    end
+     non_fixation=~strcmp(condition,'F');
+    % string=event_table.final_audio_transcript;
+    % audio_filename=event_table.final_audio_filename;
+    % probe_ans=event_table.final_probe;
+    % resp_ans=event_table.response;
+    % %reaction_time=event_table.RT;
+    % trial_complete=event_table.trial_completed;
+    % 
+    % all_tags=[all_tags;tags(non_fixation)];
+    % all_condition=[all_condition;condition(non_fixation)];
+    % all_strings=[all_strings;string(non_fixation)];
+    % all_probe_ans=[all_probe_ans;probe_ans(non_fixation)];
+    % all_audio_filenames=[all_audio_filenames;audio_filename(non_fixation)];
+    % all_resp_ans=[all_resp_ans;resp_ans(non_fixation)];
+    % %all_react_time=[all_react_time;reaction_time(non_fixation)];
+    % all_trial_comp=[all_trial_comp;trial_complete(non_fixation)];
+    % all_block_id=[all_block_id;trial_complete(non_fixation)*0+nn];
+     all_events_Table{nn,1}=[event_table(non_fixation,:)];
+% 
+ end
 
 events_table=all_events_Table{1};
 for tt=1:size(all_events_Table,1)
@@ -68,5 +73,7 @@ end
 for nn=2:size(all_events_Table,1)
     events_table=[events_table;all_events_Table{nn}];
 end 
-
-events_table = renamevars(events_table,["final_list","final_condition","final_probe_condition"],["list", "condition", "probe_condition"])
+try
+events_table = renamevars(events_table,["final_list","final_condition","final_probe_condition"],["list", "condition", "probe_condition"]);
+catch
+end

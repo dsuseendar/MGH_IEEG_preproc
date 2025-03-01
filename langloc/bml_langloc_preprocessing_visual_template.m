@@ -88,6 +88,10 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1);
 
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
+if(isempty(d_events))
+    PATH_EVENTS = [PATH_SESSION filesep 'task' ];
+    d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
+end
 %This was manually excluding events files for runs that were not completed
 task_files_to_pick=[2:3];
 d_events=d_events(task_files_to_pick);
@@ -100,9 +104,9 @@ assert(size(events_table,1)==80);
 
 
 %% Checking Behavior recordings with Natus recordings
-time2save = trialTimingOnset(1)-30*sampling_frequency:trialTimingOnset(end)+30*sampling_frequency;
+time2save = filteredEventTimes{1}(1)-30*sampling_frequency:filteredEventTimes{1}(end)+30*sampling_frequency;
 timeStart = time2save(1);
-natusTrialStart = (trialTimingOnset-timeStart)./sampling_frequency(1);
+natusTrialStart = (filteredEventTimes{1}-timeStart)./sampling_frequency(1);
 natusAudioEnd = (filteredEventTimes{10}-timeStart)./sampling_frequency(1);
 
 behTimingOnset = events_table.actual_onset;

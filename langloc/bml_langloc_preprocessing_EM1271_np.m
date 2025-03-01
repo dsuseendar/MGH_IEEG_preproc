@@ -33,7 +33,7 @@ PATH_DATA = [DATAPATH filesep 'raw_data' filesep SUBJECT filesep];
 PATH_SESSION = [PATH_DATA filesep 'ses-' SESSION];
 PATH_EDF = [PATH_SESSION filesep 'natus' ];
 PATH_EVENTS = [PATH_SESSION filesep 'task' ];
-PATH_DER = [DATAPATH filesep 'derivatives'];
+PATH_DER = [DATAPATH filesep 'derivatives' filesep];
 PATH_ANNOT = [PATH_DER filesep SUBJECT '/annot/'];
 PATH_SAVE = [PATH_DER filesep SUBJECT '/preproc/'];
 
@@ -183,27 +183,27 @@ end
 
 save([save_path filesep save_filename],'obj','-v7.3');
 
-%% Extract HG data
-
-
-% Extract high gamma components using NapLab filter extraction
-obj.extract_high_gamma('doNapLabFilterExtraction', true);
-
-% Downsample the signal to 200 Hz
-obj.downsample_signal('decimationFreq', 200);
-
-% Extract significant channels from the signal
-obj.extract_significant_channel();
-
-% Determine time-based significance of the signal
-obj.extract_time_significance();
-
-% Calculate metrics for signal normalization
-obj.extract_normalization_metrics();
-
-% Normalize the signal using z-score method
-obj.normalize_signal("normtype", 'z-score');
-
-%% Generate the report
-
-generateExperimentReport(obj, 'EM1271-langloc')
+% %% Extract HG data
+% 
+% 
+% % Extract high gamma components using NapLab filter extraction
+% obj.extract_high_gamma('doNapLabFilterExtraction', true);
+% 
+% % Downsample the signal to 200 Hz
+% obj.downsample_signal('decimationFreq', 200);
+% 
+% % Extract significant channels from the signal
+% obj.extract_significant_channel();
+% 
+% % Determine time-based significance of the signal
+% obj.extract_time_significance();
+% 
+% % Calculate metrics for signal normalization
+% obj.extract_normalization_metrics();
+% 
+% % Normalize the signal using z-score method
+% obj.normalize_signal("normtype", 'z-score');
+% 
+% %% Generate the report
+% 
+% generateExperimentReport(obj, 'EM1271-langloc')
