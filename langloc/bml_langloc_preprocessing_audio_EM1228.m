@@ -7,7 +7,7 @@ close all
 
 %% DEFINE VARIABLES
 DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
-SUBJECT='sub-EM1225';
+SUBJECT='sub-EM1228';
 SESSION = 'LangLocAudio';
 MODALITY='audio';
 
@@ -105,13 +105,14 @@ assert(size(events_table,1)==120);
 
 %% Checking Behavior recordings with Natus recordings
 % Define the time window to save, including a 30-second buffer before and after the events
-time2save = filteredEventTimes{3}(1)-15*sampling_frequency:filteredEventTimes{3}(end)+15*sampling_frequency;
+trialId = 2;
+time2save = filteredEventTimes{trialId}(1)-15*sampling_frequency:filteredEventTimes{trialId}(end)+15*sampling_frequency;
 
 % Set the start time for normalization
 timeStart = time2save(1);
 
 % Calculate the audio start times from the Natus system, normalized to timeStart
-natusAudioStart = (filteredEventTimes{3}-timeStart)./sampling_frequency(1);
+natusAudioStart = (filteredEventTimes{trialId}-timeStart)./sampling_frequency(1);
 
 % Calculate the audio end times from the Natus system, normalized to timeStart
 natusAudioEnd = (filteredEventTimes{5}-timeStart)./sampling_frequency(1);
