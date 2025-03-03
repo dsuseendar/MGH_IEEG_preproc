@@ -44,6 +44,17 @@ function filteredEventTimes = processAndPlotTriggerEventsLangLocVisual(TrigMat1)
         eventIds = [eventIds repmat(iEvent,1,length(eventTimes{iEvent}))];
     end
 
+    figure;
+    hold on;
+    colors = lines(length(eventTimes));
+    for i = 1:length(eventTimes)
+        stem(eventTimes{i}, i * ones(length(eventTimes{i}), 1), 'Color', colors(i, :), 'DisplayName', eventTypes{i, 1});
+    end
+    xlabel('Sample Index');
+    ylabel('Event Occurrence');
+    title('Stem Plot of Extracted Events');
+    grid on;
+
     
 
     % Remove non-consecutive word events (only for words 1-12)
