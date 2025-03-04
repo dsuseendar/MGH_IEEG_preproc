@@ -6,7 +6,7 @@ close all
 %% NOTES ON PROCESSING THIS PATIENT
 %% DEFINE VARIABLES
 DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
-SUBJECT='sub-EM1285';
+SUBJECT='sub-EM1287';
 SESSION = 'LangLocAudio';
 MODALITY='audio';
 
@@ -89,13 +89,13 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
 %This was manually excluding events files for runs that were not completed
-task_files_to_pick=[1:3];
+task_files_to_pick=[1:2];
 d_events=d_events(task_files_to_pick);
 
 
 [events_table] = extract_behavioral_events_for_langloc_audio('behavior_files',d_events,'sampling',unique(sampling_frequency));
 % check if there are the correct number of trials (120)
-assert(size(events_table,1)==120);
+assert(size(events_table,1)==80);
 
 
 

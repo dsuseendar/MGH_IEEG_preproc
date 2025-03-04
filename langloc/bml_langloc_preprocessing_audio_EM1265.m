@@ -1,12 +1,13 @@
-clear all
-close all
 %% BML LangLoc Pre-processing
 %  Kumar Duraivel Spring 2024
 
 %% NOTES ON PROCESSING THIS PATIENT
+clear all
+close all
+
 %% DEFINE VARIABLES
 DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
-SUBJECT='sub-EM1285';
+SUBJECT='sub-EM1265';
 SESSION = 'LangLocAudio';
 MODALITY='audio';
 
@@ -22,7 +23,7 @@ addpath(genpath(utils_folder));
 PATH_DATA = [DATAPATH filesep 'raw_data' filesep SUBJECT filesep];
 PATH_SESSION = [PATH_DATA filesep 'ses-' SESSION];
 PATH_EDF = [PATH_SESSION filesep 'natus' ];
-PATH_EVENTS = [PATH_SESSION filesep 'task' ];
+PATH_EVENTS = [PATH_SESSION filesep 'tasks' ];
 PATH_DER = [DATAPATH filesep 'derivatives'];
 PATH_ANNOT = [PATH_DER filesep SUBJECT '/annot/'];
 PATH_SAVE = [PATH_DER filesep SUBJECT '/preproc/'];
@@ -83,11 +84,14 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 
 
 
-%% HERE YOU MIGHT USE bml_sync_match_events.m?
-% bml_defaults()
+
 
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
+if(isempty(d_events))
+    PATH_EVENTS = [PATH_SESSION filesep 'task' ];
+    d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
+end
 %This was manually excluding events files for runs that were not completed
 task_files_to_pick=[1:3];
 d_events=d_events(task_files_to_pick);
@@ -101,16 +105,17 @@ assert(size(events_table,1)==120);
 
 %% Checking Behavior recordings with Natus recordings
 % Define the time window to save, including a 30-second buffer before and after the events
-time2save = filteredEventTimes{2}(1)-15*sampling_frequency:filteredEventTimes{2}(end)+15*sampling_frequency;
+trialId = 3;
+time2save = filteredEventTimes{trialId}(1)-15*sampling_frequency:filteredEventTimes{trialId}(end)+15*sampling_frequency;
 
 % Set the start time for normalization
 timeStart = time2save(1);
 
 % Calculate the audio start times from the Natus system, normalized to timeStart
-natusAudioStart = (filteredEventTimes{2}-timeStart)./sampling_frequency(1);
+natusAudioStart = (filteredEventTimes{trialId}-timeStart)./sampling_frequency(1);
 
 % Calculate the audio end times from the Natus system, normalized to timeStart
-natusAudioEnd = (filteredEventTimes{10}-timeStart)./sampling_frequency(1);
+natusAudioEnd = (filteredEventTimes{5}-timeStart)./sampling_frequency(1);
 
 % Calculate the probe onset times from the Natus system, normalized to timeStart
 natusTimingProbe = (filteredEventTimes{6}-timeStart)./sampling_frequency(1);
@@ -231,7 +236,7 @@ end
 
 % Save the ecog_data object
 save([save_path filesep save_filename],'obj','-v7.3');
-%%
+
 % % Extract high gamma components using NapLab filter extraction
 % obj.extract_high_gamma('doNapLabFilterExtraction', true);
 % 
@@ -251,4 +256,4 @@ save([save_path filesep save_filename],'obj','-v7.3');
 % obj.normalize_signal("normtype", 'z-score');
 % 
 % % Generate the experiment report
-% generateExperimentReport(obj, [obj.subject '_' obj.experiment]);
+% generateExperimentReport(obj, [subject '_' experiment]);

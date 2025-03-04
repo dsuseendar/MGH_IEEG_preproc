@@ -6,7 +6,7 @@ close all
 %% NOTES ON PROCESSING THIS PATIENT
 %% DEFINE VARIABLES
 DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
-SUBJECT='sub-EM1285';
+SUBJECT='sub-MG147';
 SESSION = 'LangLocAudio';
 MODALITY='audio';
 
@@ -22,7 +22,7 @@ addpath(genpath(utils_folder));
 PATH_DATA = [DATAPATH filesep 'raw_data' filesep SUBJECT filesep];
 PATH_SESSION = [PATH_DATA filesep 'ses-' SESSION];
 PATH_EDF = [PATH_SESSION filesep 'natus' ];
-PATH_EVENTS = [PATH_SESSION filesep 'task' ];
+PATH_EVENTS = [PATH_SESSION filesep 'tasks' ];
 PATH_DER = [DATAPATH filesep 'derivatives'];
 PATH_ANNOT = [PATH_DER filesep SUBJECT '/annot/'];
 PATH_SAVE = [PATH_DER filesep SUBJECT '/preproc/'];
@@ -88,6 +88,7 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
+
 %This was manually excluding events files for runs that were not completed
 task_files_to_pick=[1:3];
 d_events=d_events(task_files_to_pick);
@@ -101,16 +102,16 @@ assert(size(events_table,1)==120);
 
 %% Checking Behavior recordings with Natus recordings
 % Define the time window to save, including a 30-second buffer before and after the events
-time2save = filteredEventTimes{2}(1)-15*sampling_frequency:filteredEventTimes{2}(end)+15*sampling_frequency;
+time2save = filteredEventTimes{3}(1)-15*sampling_frequency:filteredEventTimes{3}(end)+15*sampling_frequency;
 
 % Set the start time for normalization
 timeStart = time2save(1);
 
 % Calculate the audio start times from the Natus system, normalized to timeStart
-natusAudioStart = (filteredEventTimes{2}-timeStart)./sampling_frequency(1);
+natusAudioStart = (filteredEventTimes{3}-timeStart)./sampling_frequency(1);
 
 % Calculate the audio end times from the Natus system, normalized to timeStart
-natusAudioEnd = (filteredEventTimes{10}-timeStart)./sampling_frequency(1);
+natusAudioEnd = (filteredEventTimes{11}-timeStart)./sampling_frequency(1);
 
 % Calculate the probe onset times from the Natus system, normalized to timeStart
 natusTimingProbe = (filteredEventTimes{6}-timeStart)./sampling_frequency(1);
@@ -150,7 +151,7 @@ events_table.trial_ended_natus = natusEndProbe+0.2;  % Add 200ms to code for fix
 %time2save = trialTimingOnset(1)-15*sampling_frequency:trialTimingOnset(end)+15*sampling_frequency;
 
 %% FOR AUDIO LANGLOC, ALIGN AUDIO WITH WAVELET
-with_wavelet=true;
+with_wavelet=false;
 % save data as an object for ease of further processing
 
 audio_align_path='./audio_alignment/stimuli_alignment_handfix';
