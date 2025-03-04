@@ -185,8 +185,8 @@ if(~isfolder(save_path))
     mkdir(save_path)
 end
 
-% % Save the ecog_data object
-% save([save_path filesep save_filename],'obj','-v7.3');
+% Save the ecog_data object
+save([save_path filesep save_filename],'obj','-v7.3');
 % 
 % % Extract high gamma components using NapLab filter extraction
 % obj.extract_high_gamma('doNapLabFilterExtraction', true);
