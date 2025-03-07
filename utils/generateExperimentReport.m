@@ -64,6 +64,54 @@ function generateExperimentReport(obj, reportName)
 
     switch obj.experiment
 
+        case {'SpatialWM'}
+           
+            mean_rt_all = mean(rt_correct, 'omitnan');
+            mean_rt_easy = mean(rt_correct(strcmp(cond_correct, 'E')), 'omitnan');
+            mean_rt_hard = mean(rt_correct(strcmp(cond_correct, 'H')), 'omitnan');
+        
+            % Results Table
+            tableContent = {
+                'Condition', 'Mean RT (ms)';
+                'Overall', sprintf('%6.1f ± %.1f', mean_rt_all*1000, std(rt_correct)*1000);
+                'Easy Trials (E)', sprintf('%6.1f ± %.1f', mean_rt_easy*1000, std(rt_correct(strcmp(cond_correct, 'sentence')))*1000);
+                'Hard Trials (H)', sprintf('%6.1f ± %.1f', mean_rt_hard*1000, std(rt_correct(strcmp(cond_correct, 'nonword')))*1000)
+            };
+            tbl = Table(tableContent);
+            tbl.Style = {Border('solid'), ColSep('solid'), RowSep('solid')};
+            tbl.TableEntriesStyle = {HAlign('center')};
+            add(rpt, tbl);
+        
+            % Reaction Time Distribution Plot
+            add(rpt, Heading2('Reaction Time Distributions'));
+            debugMode = false; % Set to true for debugging
+            if debugMode
+                f = figure('Visible', 'on', 'Position', [100 100 800 600]);
+            else
+                f = figure('Visible', 'off', 'Position', [100 100 800 600]);
+            end
+            subplot(1,2,1)
+            histogram(rt_correct(strcmp(cond_correct, 'E'))*1000, 'BinWidth', 50)
+            title('Easy Trials Condition RT Distribution')
+            xlabel('Reaction Time (ms)')
+            ylabel('Frequency')
+        
+            subplot(1,2,2)
+            histogram(rt_correct(strcmp(cond_correct, 'H'))*1000, 'BinWidth', 50)
+            title('Hard Trials Condition RT Distribution')
+            xlabel('Reaction Time (ms)')
+            ylabel('Frequency')
+        
+            % Add the figure to the PDF
+            add(rpt, Figure(f));
+            close(f);
+
+            % High Gamma Plot Generation (All trials)
+            conds.A = find(strcmp(obj.condition, 'H'));
+            conds.B = find(strcmp(obj.condition, 'E'));
+            add(rpt, Heading2('High Gamma Plots (All Trials)'));
+            high_gamma_plot(obj, conds, rpt);
+
         case {'LangLocVisual','LangLoc'}
            
             mean_rt_all = mean(rt_correct, 'omitnan');
@@ -193,6 +241,45 @@ function generateExperimentReport(obj, reportName)
         
            
     end
+
+            % Add wavelet plots to the PDF
+        % add(rpt, Heading1('Wavelet Spectrograms'));
+        % 
+        % % Generate wavelet plots for unipolar data
+        % add(rpt, Heading2('Unipolar Wavelet Spectrograms'));
+        % unipolar_figures = wavelet_plot_pdf(obj, 'unipolar');
+        % for i = 1:length(unipolar_figures)
+        %     figReporter = Figure(unipolar_figures(i));
+        %     figReporter.Scaling = 'none';
+        %     figReporter.Snapshot.ScaleToFit = true;
+        %     add(rpt, figReporter);
+        %     close(unipolar_figures(i));
+        % end
+        % 
+        % % Generate wavelet plots for bipolar data (if available)
+        % if ~isempty(obj.bip_ch_label)
+        %     add(rpt, Heading2('Bipolar Wavelet Spectrograms'));
+        %     bipolar_figures = wavelet_plot_pdf(obj, 'bipolar');
+        %     for i = 1:length(bipolar_figures)
+        %         figReporter = Figure(bipolar_figures(i));
+        %         figReporter.Scaling = 'none';
+        %         figReporter.Snapshot.ScaleToFit = true;
+        %         add(rpt, figReporter);
+        %         close(bipolar_figures(i));
+        %     end
+        % end
+        
+        % Generate wavelet contrast plots
+        % add(rpt, Heading2('Wavelet Contrast Spectrograms'));
+        % contrast_figures = wavelet_contrast_pdf(obj, conds);
+        % for i = 1:length(contrast_figures)
+        %     figReporter = Figure(contrast_figures(i));
+        %     figReporter.Scaling = 'none';
+        %     figReporter.Snapshot.ScaleToFit = true;
+        %     add(rpt, figReporter);
+        %     close(contrast_figures(i));
+        % end
+
      % Add summary report of significant channels
             add(rpt, Heading1('Summary of Significant Channels'));
             
@@ -235,12 +322,12 @@ end
 function high_gamma_plot(obj, conds, rpt)
     import mlreportgen.report.*
     import mlreportgen.dom.*
-    
+    acc = [obj.events_table.accuracy];
     % Define LangLoc settings
     langLocSettings = {
         'All Trials', conds;
-        'Accurate Trials', struct('A', conds.A(obj.events_table.accuracy(conds.A) == 1), ...
-                                  'B', conds.B(obj.events_table.accuracy(conds.B) == 1));
+        'Accurate Trials', struct('A', conds.A(acc(conds.A) == 1), ...
+                                  'B', conds.B(acc(conds.B) == 1));
     };
     
     % Add audio duration condition for LangLocAudio
@@ -257,14 +344,15 @@ function high_gamma_plot(obj, conds, rpt)
     % Data epoching
     epochTimeRange = [-0.5 6];
     [epochData, epochData_bip] = obj.extract_trial_epochs('epoch_tw', epochTimeRange, 'selectChannels', obj.elec_ch_clean);
-    
-    for iTrial = 1:size(epochData, 2)
-        audioDurSample = obj.trial_timing{iTrial,:}.end(13)-obj.trial_timing{iTrial,:}.start(1)-epochTimeRange(1)*obj.sample_freq;
-        mask = false(size(epochData, 3), 1);
-        mask(audioDurSample+1:end) = true;
-        
-        epochData(:, iTrial, mask) = NaN;
-        epochData_bip(:, iTrial, mask) = NaN;
+    if(contains(obj.experiment,'lang'))
+        for iTrial = 1:size(epochData, 2)
+            audioDurSample = obj.trial_timing{iTrial,:}.end(13)-obj.trial_timing{iTrial,:}.start(1)-epochTimeRange(1)*obj.sample_freq;
+            mask = false(size(epochData, 3), 1);
+            mask(audioDurSample+1:end) = true;
+            
+            epochData(:, iTrial, mask) = NaN;
+            epochData_bip(:, iTrial, mask) = NaN;
+        end
     end
 
     % Process each LangLoc setting
@@ -424,8 +512,15 @@ function obj = process_and_plot_data(obj, data, conds, data_type, chanLab, epoch
         plot(legendAxes, NaN, NaN, 'Color', bColor, 'LineWidth', 2);
 
         % Create the legend
-        legend(legendAxes, {'Significant HG activations', 'Significant langloc activations', 'Sentence', 'Nonword'}, ...
-               'Orientation', 'horizontal', 'Location', 'south');
+        if(contains(obj.experiment,'langloc'))
+            legend(legendAxes, {'Significant HG activations', 'Significant langloc activations', 'Sentence', 'Nonword'}, ...
+                   'Orientation', 'horizontal', 'Location', 'south');
+        end
+
+        if(contains(obj.experiment,'spatial'))
+            legend(legendAxes, {'Significant HG activations', 'Significant MDloc activations', 'Hard trials', 'Easy trials'}, ...
+                   'Orientation', 'horizontal', 'Location', 'south');
+        end
 
         % Add footer with time-permutation cluster statistics details
         footerText = sprintf('Time-Permutation Cluster Test: nPerm=1000; pThresh=%.3f; numTail=1.', 0.05);
