@@ -6,7 +6,7 @@ close all
 
 %% DEFINE VARIABLES
 DATAPATH = '/Users/dsuseendar/nese/SpatialWM/data';
-SUBJECT='sub-EM1233';
+SUBJECT='sub-EM1239';
 SESSION = 'SpatialWM';
 
 
@@ -120,7 +120,7 @@ xlabel('Discrepancy in time (s)')
 ylabel('Trials');
 
 %% FOR Spatial WM
-[trial_timing] = make_trials_swm(events_table,unique(sampling_frequency));
+[trial_timing] = make_trials_swm(events_table,unique(sampling_frequency),timeStart);
 
 
 %% WRITING ECOG DATA STRUCTURE
@@ -182,7 +182,7 @@ obj.condition = [obj.for_preproc.event_table.condition];
 obj.session = (obj.for_preproc.event_table.session);
 
 % Store the trial timing information
-obj.trial_timing = trial_timing;
+obj.trial_timing = trial_timing';
 
 % Create the save directory if it doesn't exist
 if(~isfolder(save_path))
@@ -196,7 +196,7 @@ save([save_path filesep save_filename],'obj','-v7.3');
 obj.extract_high_gamma('doNapLabFilterExtraction', true);
 
 % Downsample the signal to 100 Hz
-obj.downsample_signal('decimationFreq', 100);
+obj.downsample_signal('decimationFreq', 200);
 
 % Extract significant channels from the signal
 obj.extract_significant_channel();
@@ -210,5 +210,5 @@ obj.extract_normalization_metrics();
 % Normalize the signal using z-score method
 obj.normalize_signal("normtype", 'z-score');
 
-% Generate the experiment report
+%% Generate the experiment report
 generateExperimentReport(obj, [subject '_' experiment]);

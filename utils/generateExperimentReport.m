@@ -517,7 +517,7 @@ function obj = process_and_plot_data(obj, data, conds, data_type, chanLab, epoch
                    'Orientation', 'horizontal', 'Location', 'south');
         end
 
-        if(contains(obj.experiment,'spatial'))
+        if(contains(obj.experiment,'Spatial'))
             legend(legendAxes, {'Significant HG activations', 'Significant MDloc activations', 'Hard trials', 'Easy trials'}, ...
                    'Orientation', 'horizontal', 'Location', 'south');
         end
