@@ -512,7 +512,7 @@ function obj = process_and_plot_data(obj, data, conds, data_type, chanLab, epoch
         plot(legendAxes, NaN, NaN, 'Color', bColor, 'LineWidth', 2);
 
         % Create the legend
-        if(contains(obj.experiment,'langloc'))
+        if(contains(obj.experiment,'LangLoc'))
             legend(legendAxes, {'Significant HG activations', 'Significant langloc activations', 'Sentence', 'Nonword'}, ...
                    'Orientation', 'horizontal', 'Location', 'south');
         end
