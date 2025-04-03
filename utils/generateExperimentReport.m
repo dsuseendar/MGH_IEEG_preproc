@@ -2,6 +2,7 @@ function generateExperimentReport(obj, reportName)
      % Create the crunched folder if it doesn't exist
     crunchedFolder = fullfile(obj.crunched_file_path);
     if ~exist(crunchedFolder, 'dir')
+        
         mkdir(crunchedFolder);
     end
 
