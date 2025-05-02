@@ -1,4 +1,4 @@
-function trial_timing = make_trials_swm(event_table,fs,timeStart) 
+function [trial_timing,event_table_modified] = make_trials_swm(event_table,fs,timeStart) 
 %MAKE_TRIALS_SWM Summary of this function goes here
 %   Detailed explanation goes here
 if(istable(event_table))
@@ -70,9 +70,19 @@ for iTrial = 1:length(event_table)
 end
 
 trial_timing = trial_timing';
+
+event_table_modified = event_table;
+
+for iTrial = 1:length(event_table)
+        event_table_modified(iTrial).trial_onset = event_table(iTrial).trial_onset - timeStart/fs;
+        event_table_modified(iTrial).choice_onset = event_table(iTrial).choice_onset - timeStart/fs;
+        event_table_modified(iTrial).response_onset = event_table(iTrial).response_onset - timeStart/fs;
+end
+    
+    
+end
     
    
     
-end
 
 
