@@ -120,7 +120,7 @@ xlabel('Discrepancy in time (s)')
 ylabel('Trials');
 
 %% FOR Spatial WM
-[trial_timing] = make_trials_swm(events_table,unique(sampling_frequency),timeStart);
+[trial_timing,events_table] = make_trials_swm(events_table,unique(sampling_frequency),timeStart);
 
 
 %% WRITING ECOG DATA STRUCTURE
