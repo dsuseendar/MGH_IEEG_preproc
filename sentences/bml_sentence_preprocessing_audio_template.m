@@ -5,17 +5,17 @@ close all
 
 %% NOTES ON PROCESSING THIS PATIENT
 %% DEFINE VARIABLES
-DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
+DATAPATH = '/Users/dsuseendar/nese/MITSentenceTask/data';
 SUBJECT='sub-EM1301';
-SESSION = 'LangLocAudio';
-MODALITY='audio';
+SESSION = 'MITSentences';
+
 
 %% LOAD NEW UTILITIES FOLDER
 % Specify the folder containing Utilities
-langloc_utils_folder = fullfile(pwd, 'langloc_utils');
+sentTask_utils_folder = fullfile(pwd, 'sent_utils');
 utils_folder = fullfile("../utils");
 % Add the folder and all subfolders to the MATLAB path
-addpath(genpath(langloc_utils_folder));
+addpath(genpath(sentTask_utils_folder));
 addpath(genpath(utils_folder));
 
 %% DEFINE DATA PATHS
@@ -49,9 +49,9 @@ chan_insp={'TRIG'};
 DC_files=cell2mat(cellfun(@(x) find(strcmp(hdr.label,x)), chan_insp,'uni',false));
 TrigMat1=record(DC_files,:)';%record is the edf file contents
 
-chan_insp={'DC2'};
+chan_insp={'DC1'};
 DC_files=cell2mat(cellfun(@(x) find(strcmp(hdr.label,x)), chan_insp,'uni',false));
-photodiode=record(DC_files,:)';
+microphone=record(DC_files,:)';
 % Here TrigMat1 is single column, transformation from binary state
 % into a 16-column data structure is performed as part of the plot_trigger
 % function

@@ -5,17 +5,17 @@ close all
 
 %% NOTES ON PROCESSING THIS PATIENT
 %% DEFINE VARIABLES
-DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
+DATAPATH = '/Users/dsuseendar/nese/MITSentenceTask/data';
 SUBJECT='sub-EM1301';
 SESSION = 'LangLocAudio';
-MODALITY='audio';
+
 
 %% LOAD NEW UTILITIES FOLDER
 % Specify the folder containing Utilities
-langloc_utils_folder = fullfile(pwd, 'langloc_utils');
+sentTask_utils_folder = fullfile(pwd, 'langloc_utils');
 utils_folder = fullfile("../utils");
 % Add the folder and all subfolders to the MATLAB path
-addpath(genpath(langloc_utils_folder));
+addpath(genpath(sentTask_utils_folder));
 addpath(genpath(utils_folder));
 
 %% DEFINE DATA PATHS
