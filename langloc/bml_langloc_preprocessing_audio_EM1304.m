@@ -5,17 +5,17 @@ close all
 
 %% NOTES ON PROCESSING THIS PATIENT
 %% DEFINE VARIABLES
-DATAPATH = '/Users/dsuseendar/nese/MITSentenceTask/data';
-SUBJECT='sub-EM1301';
+DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
+SUBJECT='sub-EM1304';
 SESSION = 'LangLocAudio';
-
+MODALITY='audio';
 
 %% LOAD NEW UTILITIES FOLDER
 % Specify the folder containing Utilities
-sentTask_utils_folder = fullfile(pwd, 'langloc_utils');
+langloc_utils_folder = fullfile(pwd, 'langloc_utils');
 utils_folder = fullfile("../utils");
 % Add the folder and all subfolders to the MATLAB path
-addpath(genpath(sentTask_utils_folder));
+addpath(genpath(langloc_utils_folder));
 addpath(genpath(utils_folder));
 
 %% DEFINE DATA PATHS
@@ -47,11 +47,16 @@ channels_table = create_channels_table_bids(info, PATH_ANNOT, SUBJECT, SESSION);
 % Get triggers from edf file
 chan_insp={'TRIG'};
 DC_files=cell2mat(cellfun(@(x) find(strcmp(hdr.label,x)), chan_insp,'uni',false));
-TrigMat1=record(DC_files,:)';%record is the edf file contents
+TrigMat=record(DC_files,:)';%record is the edf file contents
+
+chan_insp={'DC1'};
+DC_files=cell2mat(cellfun(@(x) find(strcmp(hdr.label,x)), chan_insp,'uni',false));
+photodiode=record(DC_files,:)';
+
 
 chan_insp={'DC2'};
 DC_files=cell2mat(cellfun(@(x) find(strcmp(hdr.label,x)), chan_insp,'uni',false));
-photodiode=record(DC_files,:)';
+microphone=record(DC_files,:)';
 % Here TrigMat1 is single column, transformation from binary state
 % into a 16-column data structure is performed as part of the plot_trigger
 % function
@@ -69,7 +74,7 @@ photodiode=record(DC_files,:)';
 % across 16 channels, visualizes each channel in separate subplots,
 % and ultimately affects TrigMat1 by transforming its data from numerical
 % trigger states into a binary format with adjusted bit order
-filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
+filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat);
 % The processAndPlotTriggerEvents function processes TrigMat1 to represent each element's binary state
 % across 16 channels, visualizes each channel in separate colors. It
 % identifies all the trials between start and end runs, and has modules to
@@ -105,58 +110,74 @@ d_events=d_events(task_files_to_pick);
 % check if there are the correct number of trials (120)
 assert(size(events_table,1)==120);
 
+%% Parsing information in the absense of photodiode trigger
+
+% Get synchronized events table
+events_table = sync_natus_timings_for_langloc(events_table, photodiode, microphone, sample_freq);
+
+% Extract time2save window
+time2save_start = min(events_table.trial_onset_natus) - 15;
+time2save_end = max(events_table.trial_onset_natus) + 15;
+time2save = [round(time2save_start.*sample_freq): round(time2save_end.*sample_freq)];
+
+% Normalize all natus-aligned times relative to time2save start
+natus_fields = events_table.Properties.VariableNames(endsWith(events_table.Properties.VariableNames, '_natus'));
+
+for field = natus_fields
+    events_table.([field{1}]) = events_table.(field{1}) - time2save_start;
+end
 
 
-%% Checking Behavior recordings with Natus recordings
-% Define the time window to save, including a 30-second buffer before and after the events
-trialId = 2;
-time2save = filteredEventTimes{trialId}(1)-15*sampling_frequency:filteredEventTimes{trialId}(end)+15*sampling_frequency;
-
-% Set the start time for normalization
-timeStart = time2save(1);
-
-% Calculate the audio start times from the Natus system, normalized to timeStart
-natusAudioStart = (filteredEventTimes{trialId}-timeStart)./sampling_frequency(1);
-
-% Calculate the audio end times from the Natus system, normalized to timeStart
-natusAudioEnd = (filteredEventTimes{10}-timeStart)./sampling_frequency(1);
-
-% Calculate the probe onset times from the Natus system, normalized to timeStart
-natusTimingProbe = (filteredEventTimes{6}-timeStart)./sampling_frequency(1);
-
-% Calculate the probe end times from the Natus system, normalized to timeStart
-natusEndProbe = (filteredEventTimes{14}-timeStart)./sampling_frequency(1);
-
-% Extract the trial onset times from the behavioral data
-behTimingOnset = events_table.trial_onset;
-
-% Extract the audio end times from the behavioral data
-behTimingOffset = events_table.audio_ended;
-
-% Calculate the audio duration based on Natus timing
-audioDurNatus = natusAudioEnd-natusAudioStart;
-
-% Calculate the audio duration based on behavioral timing
-audioDurBeh = behTimingOffset-behTimingOnset;
-
-% Create a scatter plot to compare Natus and behavioral audio durations
-figure; scatter(audioDurNatus,audioDurBeh,20,'black','filled');
-
-% Create a histogram of the differences between Natus and behavioral audio durations
-figure; histogram(audioDurNatus-audioDurBeh,50);
-xlabel('Discrepancy in time (s)')
-ylabel('Trials');
-
+ %% Checking Behavior recordings with Natus recordings
+% % Define the time window to save, including a 30-second buffer before and after the events
+% trialId = 2;
+% time2save = filteredEventTimes{trialId}(1)-15*sampling_frequency:filteredEventTimes{trialId}(end)+15*sampling_frequency;
+% 
+% % Set the start time for normalization
+% timeStart = time2save(1);
+% 
+% % Calculate the audio start times from the Natus system, normalized to timeStart
+% natusAudioStart = (filteredEventTimes{trialId}-timeStart)./sampling_frequency(1);
+% 
+% % Calculate the audio end times from the Natus system, normalized to timeStart
+% natusAudioEnd = (filteredEventTimes{10}-timeStart)./sampling_frequency(1);
+% 
+% % Calculate the probe onset times from the Natus system, normalized to timeStart
+% natusTimingProbe = (filteredEventTimes{6}-timeStart)./sampling_frequency(1);
+% 
+% % Calculate the probe end times from the Natus system, normalized to timeStart
+% natusEndProbe = (filteredEventTimes{14}-timeStart)./sampling_frequency(1);
+% 
+% % Extract the trial onset times from the behavioral data
+% behTimingOnset = events_table.trial_onset;
+% 
+% % Extract the audio end times from the behavioral data
+% behTimingOffset = events_table.audio_ended;
+% 
+% % Calculate the audio duration based on Natus timing
+% audioDurNatus = natusAudioEnd-natusAudioStart;
+% 
+% % Calculate the audio duration based on behavioral timing
+% audioDurBeh = behTimingOffset-behTimingOnset;
+% 
+% % Create a scatter plot to compare Natus and behavioral audio durations
+% figure; scatter(audioDurNatus,audioDurBeh,20,'black','filled');
+% 
+% % Create a histogram of the differences between Natus and behavioral audio durations
+% figure; histogram(audioDurNatus-audioDurBeh,50);
+% xlabel('Discrepancy in time (s)')
+% ylabel('Trials');
+% 
 % Add Natus-based timing information to the events table, adjusting for
 % known fixation
-events_table.trial_onset_natus = natusAudioStart - 0.2;  % Subtract 200ms to code for fixation
+events_table.trial_onset_natus = natusAudioStart -0.2;  % Subtract 200ms to code for fixation
 events_table.audio_onset_natus = natusAudioStart;
 events_table.audio_ended_natus = natusAudioEnd;
 events_table.probe_onset_natus = natusTimingProbe;
 events_table.trial_ended_natus = natusEndProbe+0.2;  % Add 200ms to code for fixation
 
-
-%time2save = trialTimingOnset(1)-15*sampling_frequency:trialTimingOnset(end)+15*sampling_frequency;
+% 
+% %time2save = trialTimingOnset(1)-15*sampling_frequency:trialTimingOnset(end)+15*sampling_frequency;
 
 %% FOR AUDIO LANGLOC, ALIGN AUDIO WITH WAVELET
 with_wavelet=true;
@@ -241,11 +262,12 @@ end
 % Save the ecog_data object
 save([save_path filesep save_filename],'obj','-v7.3');
 
-% % Extract high gamma components using NapLab filter extraction
-obj.extract_high_gamma('doNapLabFilterExtraction', true);
+% % % Extract high gamma components using NapLab filter extraction
+% obj.extract_high_gamma('doNapLabFilterExtraction', true);
 
+obj.extract_bandpass_signal(1,50);
 % Downsample the signal to 100 Hz
-obj.downsample_signal('decimationFreq', 250);
+obj.downsample_signal('decimationFreq', 100);
 
 % Extract significant channels from the signal
 obj.extract_significant_channel();
@@ -259,5 +281,5 @@ obj.extract_normalization_metrics();
 % Normalize the signal using z-score method
 obj.normalize_signal("normtype", 'z-score');
 % 
-% % Generate the experiment report
-generateExperimentReport(obj, [subject '_' experiment]);
+% Generate the experiment report
+generateExperimentReport(obj, [subject '_' experiment '_bandpass']);

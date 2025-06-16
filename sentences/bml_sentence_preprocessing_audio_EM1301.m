@@ -5,17 +5,17 @@ close all
 
 %% NOTES ON PROCESSING THIS PATIENT
 %% DEFINE VARIABLES
-DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
-SUBJECT='sub-EM1296';
-SESSION = 'LangLocAudio';
-MODALITY='audio';
+DATAPATH = '/Users/dsuseendar/nese/MITSentenceTask/data';
+SUBJECT='sub-EM1301';
+SESSION = 'MITSentences';
+
 
 %% LOAD NEW UTILITIES FOLDER
 % Specify the folder containing Utilities
-langloc_utils_folder = fullfile(pwd, 'langloc_utils');
+sentTask_utils_folder = fullfile(pwd, 'sent_utils');
 utils_folder = fullfile("../utils");
 % Add the folder and all subfolders to the MATLAB path
-addpath(genpath(langloc_utils_folder));
+addpath(genpath(sentTask_utils_folder));
 addpath(genpath(utils_folder));
 
 %% DEFINE DATA PATHS
@@ -45,9 +45,13 @@ channels_table = create_channels_table_bids(info, PATH_ANNOT, SUBJECT, SESSION);
 
 %% LOAD AND PLOT TRIGGERS
 % Get triggers from edf file
+chan_insp={'TRIG'};
+DC_files=cell2mat(cellfun(@(x) find(strcmp(hdr.label,x)), chan_insp,'uni',false));
+TrigMat1=record(DC_files,:)';%record is the edf file contents
+
 chan_insp={'DC1'};
 DC_files=cell2mat(cellfun(@(x) find(strcmp(hdr.label,x)), chan_insp,'uni',false));
-mic=record(DC_files,:)';%record is the edf file contents
+microphone=record(DC_files,:)';
 % Here TrigMat1 is single column, transformation from binary state
 % into a 16-column data structure is performed as part of the plot_trigger
 % function
@@ -80,60 +84,6 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 % 
 % assert(length(trialTimingOnset)==120,'Failed trigger condition; Try the less automated approach');
 
-%% LOAD & Plot trials photodiode
-
-
-DioMat1 = TrigMat1;
-if 0
-    figure; plot(DioMat1);
-end
-sample_first_upedge = 571562; % Get from plot - ballpark
-sample_last_downedge = 2206100;
-tonsets = round(MatrixBeh(:,4) * NewSamplingRate); % ‘ImageOn’ = 4
-toffsets = round(MatrixBeh(:,5) * NewSamplingRate); % ‘ImageOff’ = 5
-toffsets = toffsets-tonsets(1)+sample_first_upedge;
-tonsets = tonsets-tonsets(1)+sample_first_upedge;
-% Adjust onset per trial
-%   Stim on time = 0.3 sec
-%   +/- 0.2 sec search range
-onset_search_range = round(0.2*NewSamplingRate);
-%
-onset_search_lag = zeros(length(tonsets),1);
-onset_search_r = zeros(length(tonsets),1);
-%
-finalonsets = zeros(length(tonsets),1);
-finaltrials0 = zeros(length(DioMat1),1);
-finaltrials = zeros(length(DioMat1),1);
-for theTrial=1:length(tonsets)
-    theTrial_samples = tonsets(theTrial,1)+[-onset_search_range ...
-        onset_search_range+toffsets(theTrial,1)-tonsets(theTrial,1)];
-    theTrial_dio = DioMat1(theTrial_samples(1):theTrial_samples(2),1);
-    % First trial after start/break has higher value before up edge
-    % Also the photo diode is not fast enough
-    theTrial_dio(theTrial_dio<max(theTrial_dio)-0.25*range(theTrial_dio)) = ...
-        min(theTrial_dio);
-    theTrial_dur = onset_search_range+1+[0 toffsets(theTrial,1)-tonsets(theTrial,1)];
-    theTrial_ideal = zeros(length(theTrial_dio),1);
-    theTrial_ideal(theTrial_dur(1):theTrial_dur(2),1) = ...
-        1000; % Set to match the range of TrigMat1_orig
-    [r, lags] = xcorr(theTrial_dio,theTrial_ideal,‘normalized’);
-    [max_r, best_idx] = max(r);
-    best_lag = lags(best_idx);
-    onset_search_lag(theTrial,1) = best_lag;
-    onset_search_r(theTrial,1) = max_r;
-    finalonsets(theTrial,1) = tonsets(theTrial,1)+best_lag;
-    finaltrials0(tonsets(theTrial,1)-theTrial_dur(1)+...
-        (theTrial_dur(1):theTrial_dur(2)),1) = 1000;
-    finaltrials(finalonsets(theTrial,1)-theTrial_dur(1)+...
-        (theTrial_dur(1):theTrial_dur(2)),1) = 1000;
-end
-% Zoom in to single trials: red should match blue better
-figure; hold on;
-plot(DioMat1); % blue
-plot(finaltrials); % red
-plot(finaltrials0); % yellow
-
-
 
 
 
@@ -147,57 +97,61 @@ if(isempty(d_events))
     d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
 end
 %This was manually excluding events files for runs that were not completed
-task_files_to_pick=[1:3];
+task_files_to_pick=[1:2 4];
 d_events=d_events(task_files_to_pick);
 
 
-[events_table] = extract_behavioral_events_for_langloc_audio('behavior_files',d_events,'sampling',unique(sampling_frequency));
+% Load your stimulus lookup table (stimsetsubset120)
+load('stimulus_lookup.mat'); % Replace with actual path
+
+% Run the function with the lookup table
+events_table = extract_behavioral_events_for_sentTask(...
+    'behavior_files', d_events, ...
+    'stimulus_lookup_table', stimsetsubset120); % Pass lookup table
+
 % check if there are the correct number of trials (120)
-assert(size(events_table,1)==120);
+assert(size(events_table,1)==285);
 
-%% % Matching the photodiode information
-behTimingOnset = events_table.trial_onset;
+% Initialize new column as empty strings
+events_table.condition = repmat({''}, height(events_table), 1);
 
-% Extract the audio end times from the behavioral data
-behTimingOffset = events_table.audio_ended;
+% Assign 'H' where corner_id is 1 or 2
+events_table.condition(ismember(events_table.corner_id, [1 2])) = {'H'};
 
-% Calculate the audio duration based on behavioral timing
-audioDurBeh = behTimingOffset-behTimingOnset;
-
-filteredEventTimes{5} = round(locsAudio*sampling_frequency(1)); % Audio End
-
-filteredEventTimes{3} = round((locsAudio - audioDurBeh)*sampling_frequency(1)); % Audio Start
-
-filteredEventTimes{6} = round((locsAudio + 1.2)*sampling_frequency(1)); % Probe Start
-
-filteredEventTimes{14} = round((locsAudio + 1.8)*sampling_frequency(1)); % Probe End
-
+% Assign 'L' where corner_id is 3 or 4
+events_table.condition(ismember(events_table.corner_id, [3 4])) = {'L'};
 
 
 %% Checking Behavior recordings with Natus recordings
 % Define the time window to save, including a 30-second buffer before and after the events
-time2save = filteredEventTimes{3}(1)-15*sampling_frequency(1):filteredEventTimes{3}(end)+15*sampling_frequency(1);
+trialId = 3;
+time2save = filteredEventTimes{trialId}(1)-30*sampling_frequency(1):filteredEventTimes{trialId}(end)+30*sampling_frequency(1);
 
 % Set the start time for normalization
 timeStart = time2save(1);
 
+natusAudioStart = nan(size(events_table,1),1);
+natusAudioEnd = nan(size(events_table,1),1);
+natusBehProbe = nan(size(events_table,1),1);
+natusResponse = nan(size(events_table,1),1);
 % Calculate the audio start times from the Natus system, normalized to timeStart
-natusAudioStart = (filteredEventTimes{3}-timeStart)./sampling_frequency(1);
+natusAudioStart(~isnan(events_table.trial)) = (filteredEventTimes{trialId}-timeStart)./sampling_frequency(1);
 
 % Calculate the audio end times from the Natus system, normalized to timeStart
-natusAudioEnd = (filteredEventTimes{5}-timeStart)./sampling_frequency(1);
+natusAudioEnd(~isnan(events_table.trial)) = (filteredEventTimes{11}-timeStart)./sampling_frequency(1);
 
 % Calculate the probe onset times from the Natus system, normalized to timeStart
-natusTimingProbe = (filteredEventTimes{6}-timeStart)./sampling_frequency(1);
+natusBehProbe(isnan(events_table.trial)) = (filteredEventTimes{5}-timeStart)./sampling_frequency(1);
 
-% Calculate the probe end times from the Natus system, normalized to timeStart
-natusEndProbe = (filteredEventTimes{14}-timeStart)./sampling_frequency(1);
+% Calculate the probe onset times from the Natus system, normalized to timeStart
+natusResponse(isnan(events_table.trial)) = (filteredEventTimes{7}-timeStart)./sampling_frequency(1);
+
 
 % Extract the trial onset times from the behavioral data
 behTimingOnset = events_table.trial_onset;
 
 % Extract the audio end times from the behavioral data
-behTimingOffset = events_table.audio_ended;
+behTimingOffset = events_table.trial_offset;
 
 % Calculate the audio duration based on Natus timing
 audioDurNatus = natusAudioEnd-natusAudioStart;
@@ -218,25 +172,21 @@ ylabel('Trials');
 events_table.trial_onset_natus = natusAudioStart - 0.2;  % Subtract 200ms to code for fixation
 events_table.audio_onset_natus = natusAudioStart;
 events_table.audio_ended_natus = natusAudioEnd;
-events_table.probe_onset_natus = natusTimingProbe;
-events_table.trial_ended_natus = natusEndProbe+0.2;  % Add 200ms to code for fixation
+events_table.probe_onset_natus = natusBehProbe;
+events_table.response_onset_natus = natusResponse;
+events_table.trial_ended_natus = natusAudioEnd+0.2;  % Add 200ms to code for fixation
 
 
 %time2save = trialTimingOnset(1)-15*sampling_frequency:trialTimingOnset(end)+15*sampling_frequency;
 
-%% FOR AUDIO LANGLOC, ALIGN AUDIO WITH WAVELET
-with_wavelet=true;
-% save data as an object for ease of further processing
+%% Make Trials for the sentence task
 
-audio_align_path='./audio_alignment/stimuli_alignment_handfix';
-% This needs to be properly defined from within the
-% trial_timing_from_json_files... function (how to make this globally
-% available?
-audio_path='./audio_alignment/stimuli';
-trial_timing=get_timing_from_json_files_LangLocAudio_Optim(events_table,audio_align_path,with_wavelet,sampling_frequency(1));
+% Filter events_table to include only 'sentence' condition trials
+sentence_mask = strcmp(events_table.cond_expt, 'sentence');
+events_table_sentence = events_table(sentence_mask, :);
 
 
-
+[trial_timing] = make_trials_mit_sentences(events_table_sentence, sampling_frequency(1));
 
 %% WRITING ECOG DATA STRUCTURE
 % Assign the subject identifier
@@ -273,7 +223,7 @@ for_preproc = struct;
 % Store the raw electrode data for selected channels
 for_preproc.elec_data_raw = single(record(ch_select,time2save));
 % Store the events table
-for_preproc.event_table = events_table;
+for_preproc.event_table = events_table_sentence;
 % Set the stitch index (used for combining multiple files)
 for_preproc.stitch_index_raw = 1;
 % Store the original sampling frequency
@@ -291,23 +241,23 @@ obj.preprocess_signal('order',order,'isPlotVisible',false,'doneVisualInspection'
 % Store the events table in the object
 obj.events_table = obj.for_preproc.event_table;
 % Convert condition labels from 'S' and 'N' to 'sentence' and 'nonword'
-obj.condition = cellfun(@(x) replace(x, {'S', 'N'}, {'sentence', 'nonword'}), obj.for_preproc.event_table.condition, 'UniformOutput', false);
+obj.condition = cellfun(@(x) replace(x, {'H', 'L'}, {'H', 'L'}), obj.for_preproc.event_table.condition, 'UniformOutput', false);
 
 % Store the session information
-obj.session = (obj.for_preproc.event_table.list);
+obj.session = (obj.for_preproc.event_table.run);
 
 % Store the trial timing information
-obj.trial_timing = trial_timing(:,1);
+obj.trial_timing = trial_timing';
 
 % Create the save directory if it doesn't exist
 if(~isfolder(save_path))
     mkdir(save_path)
 end
 
-% % Save the ecog_data object
+% Save the ecog_data object
 save([save_path filesep save_filename],'obj','-v7.3');
 
-% Extract high gamma components using NapLab filter extraction
+% % Extract high gamma components using NapLab filter extraction
 obj.extract_high_gamma('doNapLabFilterExtraction', true);
 
 % Downsample the signal to 100 Hz
@@ -324,6 +274,6 @@ obj.extract_normalization_metrics();
 
 % Normalize the signal using z-score method
 obj.normalize_signal("normtype", 'z-score');
-
-% Generate the experiment report
+% 
+% % Generate the experiment report
 generateExperimentReport(obj, [subject '_' experiment]);

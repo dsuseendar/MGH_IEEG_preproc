@@ -24,7 +24,8 @@ function generateExperimentReport(obj, reportName)
     tp = TitlePage();
     tp.Title = 'Experiment Results Report';
     tp.Subtitle = 'Neural Data Analysis';
-    tp.Author = 'Kumar Duraivel';
+    tp.Author = input('Enter author name: ', 's');
+
     tp.PubDate = datestr(now, 'dd-mmm-yyyy');
     add(rpt, tp);
 
@@ -104,6 +105,75 @@ function generateExperimentReport(obj, reportName)
     cond_correct = cond(acc == 1);
 
     switch obj.experiment
+
+        case {'MITSentences'}
+           
+            mean_rt_all = mean(rt_correct, 'omitnan');
+            mean_rt_low_surprisal = mean(rt_correct(strcmp(cond_correct, 'L')), 'omitnan');
+            mean_rt_high_surprisal = mean(rt_correct(strcmp(cond_correct, 'H')), 'omitnan');
+        
+           %  % Results Table
+           %  tableContent = {
+           %      'Condition', 'Mean RT (ms)';
+           %      'Overall', sprintf('%6.1f ± %.1f', mean_rt_all*1000, std(rt_correct)*1000);
+           %      'Low Surprisal Trials (E)', sprintf('%6.1f ± %.1f', mean_rt_easy*1000, std(rt_correct(strcmp(cond_correct, 'sentence')))*1000);
+           %      'Hard Trials (H)', sprintf('%6.1f ± %.1f', mean_rt_hard*1000, std(rt_correct(strcmp(cond_correct, 'nonword')))*1000)
+           %  };
+           %  tbl = Table(tableContent);
+           %  tbl.Style = {Border('solid'), ColSep('solid'), RowSep('solid')};
+           %  tbl.TableEntriesStyle = {HAlign('center')};
+           %  add(rpt, tbl);
+           % 
+           %  % Reaction Time Distribution Plot
+           %  add(rpt, Heading2('Reaction Time Distributions'));
+           %  debugMode = false; % Set to true for debugging
+           %  if debugMode
+           %      f = figure('Visible', 'on', 'Position', [100 100 800 600]);
+           %  else
+           %      f = figure('Visible', 'off', 'Position', [100 100 800 600]);
+           %  end
+           %  subplot(1,2,1)
+           %  histogram(rt_correct(strcmp(cond_correct, 'E'))*1000, 'BinWidth', 50)
+           %  title('Easy Trials Condition RT Distribution')
+           %  xlabel('Reaction Time (ms)')
+           %  ylabel('Frequency')
+           % 
+           %  subplot(1,2,2)
+           %  histogram(rt_correct(strcmp(cond_correct, 'H'))*1000, 'BinWidth', 50)
+           %  title('Hard Trials Condition RT Distribution')
+           %  xlabel('Reaction Time (ms)')
+           %  ylabel('Frequency')
+           % 
+           % % Add the figure to the PDF
+           %  imgObj = addImageToReport( tempFolder, f);
+           % 
+           %   % Add the image to the report
+           %  add(rpt, imgObj);
+           % 
+           %  % Add a page break after the image
+            % add(rpt, PageBreak());
+
+            % High Gamma Plot Generation (All trials)
+            add(rpt, Heading2('High Gamma Plots '));
+            conditionImages = high_gamma_plot(obj);
+
+            for i = 1:size(conditionImages, 1)
+                 settingName = conditionImages{i, 1};
+                 add(rpt, Chapter(settingName));
+
+                 imageFiles = conditionImages{i,3};
+
+                 for imgPathId = 1:length(imageFiles)
+                    imgPath = imageFiles{imgPathId};
+                    imgObj = Image(imgPath);
+                    imgObj.Width = "6in";
+                    imgObj.Height = "7in";
+                    
+                    add(rpt, imgObj);
+                    add(rpt, PageBreak());
+                end
+                 
+            end
 
         case {'SpatialWM'}
            
@@ -560,7 +630,7 @@ function conditionImages = high_gamma_plot(obj)
     tempFolder = tempdir; % Get system temporary folder path
 
     acc = [obj.events_table.accuracy];
-    numTrials = length(acc);
+    numTrials = length(obj.condition);
     conditionIds = obj.condition;
     condLabels = unique(obj.condition); % Extract unique condition labels
 
@@ -601,6 +671,9 @@ function conditionImages = high_gamma_plot(obj)
         elseif contains(obj.experiment, 'SpatialWM')
             % For SpatialWM experiments: Use Hard Trials ('H') and Easy Trials ('E') conditions
             specifiedConditions = {'H', 'E'};
+        elseif contains(obj.experiment, 'MITSentences')
+            % For MITSentences experiments: Use High Surprisal ('H') and Low Surprisal ('L') conditions
+            specifiedConditions = {'H', 'L'};
         elseif contains(obj.experiment, 'MITNLengthSentences')
         % For MITNLengthSentences: Use unique conditions with intact/scrambled contrast
             
@@ -855,6 +928,7 @@ function imageFiles = process_and_save_images(obj, data, conds, trials2include, 
                     patch([x fliplr(x)], [trialMean+trialSEM fliplr(trialMean-trialSEM)], ...
                           colors(iCondIdx,:), 'FaceAlpha', 0.3, 'EdgeColor', 'none');
                     plot(x, trialMean, 'Color', colors(iCondIdx,:), 'LineWidth', 1);
+                    max_val_cond(iCondIdx) = max(trialMean + trialSEM);
                 end
 
                  % Plot significance markers and horizontal line
@@ -887,7 +961,11 @@ function imageFiles = process_and_save_images(obj, data, conds, trials2include, 
                     ylabel('');
                 end
                 title(chanLab{iChan2},'Interpreter','none');
-                ylim([-1 3]);
+                max_val = max(max_val_cond);
+        
+                % Set ylim
+                ylim([-1 max_val + 0.25]);
+                yline(0, 'k-.')
                 xlim(epochTimeRange);
 
                 
@@ -929,7 +1007,7 @@ function imageFiles = process_and_save_images(obj, data, conds, trials2include, 
 
         % Save the figure as an image file in the temporary folder
         imageFileName = fullfile(tempFolder, sprintf('%s_%s_Block%d.png', data_type, obj.experiment, iF));
-        exportgraphics(f, imageFileName, 'Resolution',300); % Save figure as PNG file
+        exportgraphics(f, imageFileName, 'Resolution',330); % Save figure as PNG file
         imageFiles{end+1} = imageFileName; % Append to list of saved images
         
         close(f); % Close the figure to free memory
