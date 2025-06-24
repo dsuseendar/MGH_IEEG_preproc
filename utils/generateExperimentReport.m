@@ -646,7 +646,7 @@ function conditionImages = high_gamma_plot(obj)
 
 
     % Data epoching
-    epochTimeRange = [-0.5 6];
+    epochTimeRange = [-0.5 2.5];
     [epochData, epochData_bip] = obj.extract_trial_epochs('epoch_tw', epochTimeRange, 'selectChannels', obj.elec_ch_clean);
 
    
