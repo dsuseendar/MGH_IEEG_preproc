@@ -261,13 +261,13 @@ save([save_path filesep save_filename],'obj','-v7.3');
 obj.extract_high_gamma('doNapLabFilterExtraction', true);
 
 % Downsample the signal to 100 Hz
-obj.downsample_signal('decimationFreq', 100);
+obj.downsample_signal('decimationFreq', 250);
 
 % Extract significant channels from the signal
 obj.extract_significant_channel();
 
 % Determine time-based significance of the signal
-obj.extract_time_significance();
+obj.extract_time_significance(epochTime=[-0.5 2.5]);
 
 % Calculate metrics for signal normalization
 obj.extract_normalization_metrics();
@@ -276,4 +276,4 @@ obj.extract_normalization_metrics();
 obj.normalize_signal("normtype", 'z-score');
 % 
 % % Generate the experiment report
-generateExperimentReport(obj, [subject '_' experiment]);
+generateExperimentReport(obj, [obj.subject '_' obj.experiment]);
