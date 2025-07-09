@@ -102,9 +102,9 @@ function [trial_timing] = get_timing_from_json_files_LangLocAudio_Optim(events_t
         trial_timing{k,2} = trial_type;
     end
 
-    % Plot histogram of timing differences
-    % figure;
-    % histogram(all_timing_diff);
-    % xlabel('ms');
+    %Plot histogram of timing differences
+    figure;
+    histogram(all_timing_diff);
+    xlabel('ms');
     % assert(max(abs(all_timing_diff)) < 50, 'Timing difference exceeds 50ms');
 end

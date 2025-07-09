@@ -1,4 +1,4 @@
- 
+
 function events_table_out = sync_natus_timings_for_langloc(events_table, photodiode, microphone, sample_freq)
     % SYNC_NATUS_TIMINGS_FOR_LANGLOC
     % Aligns trial and event timings to Natus system (in seconds) for langloc.

@@ -35,7 +35,7 @@ function generateExperimentReport(obj, reportName)
     
 
     if(sum(contains(obj.elec_ch_type, 'seeg')))
-        if(isfield(obj.stats.time_series,'pSigChan_bip'))
+        if(isfield(obj.stats.sig_hg_channel,'pChan_bip'))
                 infoTable = {
                 'Subject Name', obj.subject;
                 'Experiment Name', obj.experiment;
@@ -46,8 +46,8 @@ function generateExperimentReport(obj, reportName)
                  'Total ECoG Strip Electrodes', num2str(sum(contains(obj.elec_ch_type, 'ecog_strip')));
                 'Unipolar Contacts', num2str(length(obj.elec_ch_valid));
                 'Bipolar Contacts', num2str(length(obj.bip_ch_label));
-                 'Significant Unipolar Electrodes (High Gamma)', num2str(sum(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan)));
-                 'Significant Bipolar Electrodes (High Gamma)', num2str(sum(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan_bip)));
+                 'Significant Unipolar Electrodes (High Gamma)', num2str(sum( obj.stats.sig_hg_channel.h_fdr_05));
+                 'Significant Bipolar Electrodes (High Gamma)', num2str(sum( obj.stats.sig_hg_channel.h_bip_fdr_05));
             };
 
         else
@@ -62,7 +62,7 @@ function generateExperimentReport(obj, reportName)
                  'Total ECoG Strip Electrodes', num2str(sum(contains(obj.elec_ch_type, 'ecog_strip')));
                 'Unipolar Contacts', num2str(length(obj.elec_ch_valid));
                 'Bipolar Contacts', num2str(length(obj.bip_ch_label));
-                 'Significant Unipolar Electrodes (High Gamma)', num2str(sum(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan)));                
+                 'Significant Unipolar Electrodes (High Gamma)', num2str(sum( obj.stats.sig_hg_channel.h_fdr_05));
             };
 
         end
@@ -568,36 +568,36 @@ function generateExperimentReport(obj, reportName)
 
            
 
-     % Add summary report of significant channels
-    add(rpt, Chapter('Summary of Significant Channels'));
-    
-    % Unipolar channels
-    add(rpt, Heading2('Unipolar Channels with Significant Time Clusters'));
-    sigUnipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan));
-    if ~isempty(sigUnipolarChannels)
-        unipolarList = cell(length(sigUnipolarChannels), 1);
-        for i = 1:length(sigUnipolarChannels)
-            unipolarList{i} = obj.elec_ch_label{sigUnipolarChannels(i)};
-        end
-        add(rpt, UnorderedList(unipolarList));
-    else
-        add(rpt, Paragraph('No significant unipolar channels found.'));
-    end
-    
-    % Bipolar channels
-    if(isfield(obj.stats.time_series,'pSigChan_bip'))
-        add(rpt, Heading2('Bipolar Channels with Significant Time Clusters'));
-        sigBipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan_bip));
-        if ~isempty(sigBipolarChannels)
-            bipolarList = cell(length(sigBipolarChannels), 1);
-            for i = 1:length(sigBipolarChannels)
-                bipolarList{i} = obj.bip_ch_label{sigBipolarChannels(i)};
-            end
-            add(rpt, UnorderedList(bipolarList));
-        else
-            add(rpt, Paragraph('No significant bipolar channels found.'));
-        end
-    end
+    %  % Add summary report of significant channels
+    % add(rpt, Chapter('Summary of Significant Channels'));
+    % 
+    % % Unipolar channels
+    % add(rpt, Heading2('Unipolar Channels with Significant Time Clusters'));
+    % sigUnipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan));
+    % if ~isempty(sigUnipolarChannels)
+    %     unipolarList = cell(length(sigUnipolarChannels), 1);
+    %     for i = 1:length(sigUnipolarChannels)
+    %         unipolarList{i} = obj.elec_ch_label{sigUnipolarChannels(i)};
+    %     end
+    %     add(rpt, UnorderedList(unipolarList));
+    % else
+    %     add(rpt, Paragraph('No significant unipolar channels found.'));
+    % end
+    % 
+    % % Bipolar channels
+    % if(isfield(obj.stats.time_series,'pSigChan_bip'))
+    %     add(rpt, Heading2('Bipolar Channels with Significant Time Clusters'));
+    %     sigBipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan_bip));
+    %     if ~isempty(sigBipolarChannels)
+    %         bipolarList = cell(length(sigBipolarChannels), 1);
+    %         for i = 1:length(sigBipolarChannels)
+    %             bipolarList{i} = obj.bip_ch_label{sigBipolarChannels(i)};
+    %         end
+    %         add(rpt, UnorderedList(bipolarList));
+    %     else
+    %         add(rpt, Paragraph('No significant bipolar channels found.'));
+    %     end
+    % end
 
     % Close the PDF document   
     
@@ -646,7 +646,12 @@ function conditionImages = high_gamma_plot(obj)
 
 
     % Data epoching
-    epochTimeRange = [-0.5 2.5];
+    if contains(obj.experiment, {'MITSentences'})
+     epochTimeRange = [-0.5 2.5];
+    else
+        epochTimeRange = [-0.5 6];
+    end
+
     [epochData, epochData_bip] = obj.extract_trial_epochs('epoch_tw', epochTimeRange, 'selectChannels', obj.elec_ch_clean);
 
    
@@ -710,7 +715,7 @@ function imageFiles = process_and_save_images(obj, data, conds, trials2include, 
     data2process = data(:,trials2include,:);
     conds2process = conds(trials2include);
     
-    numChan = 10; % Number of channels to plot per figure
+    numChan = 5; % Number of channels to plot per figure
     totChanBlock = ceil(size(data2process, 1) / numChan);
 
     colors = lines(numel(conditions)); % Generate distinct colors for each condition
@@ -1072,7 +1077,7 @@ function conditionImages = high_gamma_plot_word_boundaries(obj)
     };
 
     % Data epoching
-    epochTimeRange = [-0.5 0.5];
+    epochTimeRange = [-1 1];
     numWords = 12;
     % Loop through each word position
 
@@ -1094,7 +1099,7 @@ function conditionImages = high_gamma_plot_word_boundaries(obj)
             concatenatedEpochsNonword = cat(3, concatenatedEpochsNonword, nonwordTrials);
         end
 
-        % Perform timePermCluster test for significance
+        %Perform timePermCluster test for significance
         parfor iChan = 1:size(epochData,1)
             aTrialData = squeeze(epochData(iChan, ismember(obj.condition, 'sentence'), :));
             bTrialData = squeeze(epochData(iChan, ismember(obj.condition, 'nonword'), :));
@@ -1171,7 +1176,7 @@ end
 function imageFiles = process_and_save_images_word_boundaries(obj,...
     dataSentence, dataNonword, pSig, wordBoundaries, timePointsPerWord,...
     totalTimePoints, tempFolder, settingName, dataType,chanLab)
-    numChanBlock = 10; % Number of channels per figure
+    numChanBlock = 5; % Number of channels per figure
     totChanBlock = ceil(size(dataSentence, 1) / numChanBlock);
 
     imageFiles = {};
@@ -1180,7 +1185,7 @@ function imageFiles = process_and_save_images_word_boundaries(obj,...
         f = figure('Visible', 'off', 'Position', [100 100 1000 1200], 'Renderer', 'painters');
 
         for iChan = 1:min(numChanBlock, size(dataSentence, 1) - iChanBlock*numChanBlock)
-            iChan2 = iChanBlock*numChanBlock + iChan;
+            iChan2 = iChanBlock*numChanBlock + iChan
 
             subplot(numChanBlock, 1, iChan);
             hold on;
@@ -1238,7 +1243,7 @@ function imageFiles = process_and_save_images_word_boundaries(obj,...
         max_val = max(max_val_sentence, max_val_nonword);
         
         % Set ylim
-        ylim([-1 max_val + 0.5]);
+        ylim([-1 max_val + 0.25]);
         yline(0, 'k-.')
 
         
