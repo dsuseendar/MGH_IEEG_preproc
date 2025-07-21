@@ -568,36 +568,36 @@ function generateExperimentReport(obj, reportName)
 
            
 
-    %  % Add summary report of significant channels
-    % add(rpt, Chapter('Summary of Significant Channels'));
-    % 
-    % % Unipolar channels
-    % add(rpt, Heading2('Unipolar Channels with Significant Time Clusters'));
-    % sigUnipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan));
-    % if ~isempty(sigUnipolarChannels)
-    %     unipolarList = cell(length(sigUnipolarChannels), 1);
-    %     for i = 1:length(sigUnipolarChannels)
-    %         unipolarList{i} = obj.elec_ch_label{sigUnipolarChannels(i)};
-    %     end
-    %     add(rpt, UnorderedList(unipolarList));
-    % else
-    %     add(rpt, Paragraph('No significant unipolar channels found.'));
-    % end
-    % 
-    % % Bipolar channels
-    % if(isfield(obj.stats.time_series,'pSigChan_bip'))
-    %     add(rpt, Heading2('Bipolar Channels with Significant Time Clusters'));
-    %     sigBipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan_bip));
-    %     if ~isempty(sigBipolarChannels)
-    %         bipolarList = cell(length(sigBipolarChannels), 1);
-    %         for i = 1:length(sigBipolarChannels)
-    %             bipolarList{i} = obj.bip_ch_label{sigBipolarChannels(i)};
-    %         end
-    %         add(rpt, UnorderedList(bipolarList));
-    %     else
-    %         add(rpt, Paragraph('No significant bipolar channels found.'));
-    %     end
-    % end
+     % Add summary report of significant channels
+    add(rpt, Chapter('Summary of Significant Channels'));
+
+    % Unipolar channels
+    add(rpt, Heading2('Unipolar Channels with Significant Time Clusters'));
+    sigUnipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan));
+    if ~isempty(sigUnipolarChannels)
+        unipolarList = cell(length(sigUnipolarChannels), 1);
+        for i = 1:length(sigUnipolarChannels)
+            unipolarList{i} = obj.elec_ch_label{sigUnipolarChannels(i)};
+        end
+        add(rpt, UnorderedList(unipolarList));
+    else
+        add(rpt, Paragraph('No significant unipolar channels found.'));
+    end
+
+    % Bipolar channels
+    if(isfield(obj.stats.time_series,'pSigChan_bip'))
+        add(rpt, Heading2('Bipolar Channels with Significant Time Clusters'));
+        sigBipolarChannels = find(cellfun(@(x) any(x.h_sig_05), obj.stats.time_series.pSigChan_bip));
+        if ~isempty(sigBipolarChannels)
+            bipolarList = cell(length(sigBipolarChannels), 1);
+            for i = 1:length(sigBipolarChannels)
+                bipolarList{i} = obj.bip_ch_label{sigBipolarChannels(i)};
+            end
+            add(rpt, UnorderedList(bipolarList));
+        else
+            add(rpt, Paragraph('No significant bipolar channels found.'));
+        end
+    end
 
     % Close the PDF document   
     
@@ -705,7 +705,7 @@ function conditionImages = high_gamma_plot(obj)
     end
 
     % % Delete all temporary image files after the report is saved
-    % deleteTemporaryFiles(imageFiles);
+   % deleteTemporaryFiles(imageFiles);
 end
 
 function imageFiles = process_and_save_images(obj, data, conds, trials2include, data_type, chanLab, epochTimeRange, conditions, tempFolder, settingName)
@@ -715,7 +715,7 @@ function imageFiles = process_and_save_images(obj, data, conds, trials2include, 
     data2process = data(:,trials2include,:);
     conds2process = conds(trials2include);
     
-    numChan = 5; % Number of channels to plot per figure
+    numChan = 10; % Number of channels to plot per figure
     totChanBlock = ceil(size(data2process, 1) / numChan);
 
     colors = lines(numel(conditions)); % Generate distinct colors for each condition
@@ -1073,11 +1073,16 @@ function conditionImages = high_gamma_plot_word_boundaries(obj)
 
     % Define settings for each experiment
     conditionImages = {
-        'All Trials', 1:size(obj.trial_timing, 1);
+        'All Trials', 1:size(obj.trial_timing, 1);      
     };
+    acc = [obj.events_table.accuracy];
+    accurateTrials = find(acc == 1);
+    if ~isempty(accurateTrials)
+        conditionImages(end+1, :) = {'Accurate Trials', accurateTrials};
+    end
 
     % Data epoching
-    epochTimeRange = [-1 1];
+    epochTimeRange = [-0.5 0.5];
     numWords = 12;
     % Loop through each word position
 
@@ -1185,7 +1190,7 @@ function imageFiles = process_and_save_images_word_boundaries(obj,...
         f = figure('Visible', 'off', 'Position', [100 100 1000 1200], 'Renderer', 'painters');
 
         for iChan = 1:min(numChanBlock, size(dataSentence, 1) - iChanBlock*numChanBlock)
-            iChan2 = iChanBlock*numChanBlock + iChan
+            iChan2 = iChanBlock*numChanBlock + iChan;
 
             subplot(numChanBlock, 1, iChan);
             hold on;
