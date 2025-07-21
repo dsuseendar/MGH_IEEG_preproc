@@ -5,9 +5,9 @@ close all
 
 %% NOTES ON PROCESSING THIS PATIENT
 %% DEFINE VARIABLES
-DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
+DATAPATH = '/Volumes/disk/nese/LangLoc/data';
 SUBJECT='sub-EM1065';
-SESSION = 'LangLocAudio';
+SESSION = 'LangLoc-2';
 MODALITY='audio';
 
 %% LOAD NEW UTILITIES FOLDER
@@ -34,7 +34,7 @@ if ~exist(PATH_SAVE,'dir'), mkdir(PATH_SAVE); end
 % addpath('/Users/ashleywalton/Dropbox/1_BraindModulationLab/0_MIT/EMU_Preprocessing/EMU_LangLoc_Preprocessing_aw/langloc_utils/edfread.m');
 % edf_file=[SUBJECT,'_LangLocAudio_d02.EDF'];
 edflist = dir([PATH_EDF filesep '*.EDF']);
-edfname = edflist.name;
+edfname = edflist(2).name;
 
 [hdr,record]=edfread([PATH_EDF filesep edfname]);
 info = edfinfo([PATH_EDF filesep edfname]);
@@ -88,8 +88,12 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
+if(isempty(d_events))
+    PATH_EVENTS = [PATH_SESSION filesep 'task' ];
+    d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
+end
 %This was manually excluding events files for runs that were not completed
-task_files_to_pick=[2:3];
+task_files_to_pick=[4:6];
 d_events=d_events(task_files_to_pick);
 
 
@@ -229,9 +233,9 @@ if(~isfolder(save_path))
     mkdir(save_path)
 end
 
-% % Save the ecog_data object
-% save([save_path filesep save_filename],'obj','-v7.3');
-% 
+% Save the ecog_data object
+save([save_path filesep save_filename],'obj','-v7.3');
+
 % % Extract high gamma components using NapLab filter extraction
 % obj.extract_high_gamma('doNapLabFilterExtraction', true);
 % 
