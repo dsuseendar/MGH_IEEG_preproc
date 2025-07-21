@@ -173,7 +173,7 @@ subject = SUBJECT;
 % Assign the experiment name
 experiment = SESSION;
 % Set the processing order
-order = 'defaultSEEGorBOTHBroadBandNoReference';
+order = 'defaultSEEGorBOTHBroadBand';
 % Create the filename for saving the processed data
 save_filename = [ subject '_' experiment '_crunched_' order '.mat'];
 % Set the path for saving the processed data
@@ -234,9 +234,10 @@ if(~isfolder(save_path))
 end
 
 % % Save the ecog_data object
-% save([save_path filesep save_filename],'obj','-v7.3');
+save([save_path filesep save_filename],'obj','-v7.3');
 % 
-% % Extract high gamma components using NapLab filter extraction
+%
+% Extract high gamma components using NapLab filter extraction
 obj.extract_high_gamma('doNapLabFilterExtraction', true);
 
 % Downsample the signal to 200 Hz
@@ -245,8 +246,8 @@ obj.downsample_signal('decimationFreq', 200);
 % Extract significant channels from the signal
 obj.extract_significant_channel();
 
-% % Determine time-based significance of the signal
-% obj.extract_time_significance();
+% % % Determine time-based significance of the signal
+ obj.extract_time_significance();
 
 % Calculate metrics for signal normalization
 obj.extract_normalization_metrics();

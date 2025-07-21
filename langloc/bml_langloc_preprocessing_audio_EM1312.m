@@ -1,14 +1,13 @@
+clear all
+close all
 %% BML LangLoc Pre-processing
 %  Kumar Duraivel Spring 2024
 
 %% NOTES ON PROCESSING THIS PATIENT
-clear all
-close all
-
 %% DEFINE VARIABLES
-DATAPATH = '/Volumes/disk/nese/LangLoc/data';
-SUBJECT='sub-EM1169';
-SESSION = 'LangLocAudio-1';
+DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
+SUBJECT='sub-EM1312';
+SESSION = 'LangLocAudio';
 MODALITY='audio';
 
 %% LOAD NEW UTILITIES FOLDER
@@ -35,7 +34,7 @@ if ~exist(PATH_SAVE,'dir'), mkdir(PATH_SAVE); end
 % addpath('/Users/ashleywalton/Dropbox/1_BraindModulationLab/0_MIT/EMU_Preprocessing/EMU_LangLoc_Preprocessing_aw/langloc_utils/edfread.m');
 % edf_file=[SUBJECT,'_LangLocAudio_d02.EDF'];
 edflist = dir([PATH_EDF filesep '*.EDF']);
-edfname = edflist(2).name;
+edfname = edflist.name;
 
 [hdr,record]=edfread([PATH_EDF filesep edfname]);
 info = edfinfo([PATH_EDF filesep edfname]);
@@ -84,7 +83,8 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 
 
 
-
+%% HERE YOU MIGHT USE bml_sync_match_events.m?
+% bml_defaults()
 
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
@@ -93,28 +93,28 @@ if(isempty(d_events))
     d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
 end
 %This was manually excluding events files for runs that were not completed
-task_files_to_pick=[2];
+task_files_to_pick=[2:4];
 d_events=d_events(task_files_to_pick);
 
 
 [events_table] = extract_behavioral_events_for_langloc_audio('behavior_files',d_events,'sampling',unique(sampling_frequency));
 % check if there are the correct number of trials (120)
-assert(size(events_table,1)==40);
+assert(size(events_table,1)==120);
 
 
 
 %% Checking Behavior recordings with Natus recordings
 % Define the time window to save, including a 30-second buffer before and after the events
-time2save = filteredEventTimes{3}(1)-15*sampling_frequency:filteredEventTimes{3}(end)+15*sampling_frequency;
+time2save = filteredEventTimes{2}(1)-15*sampling_frequency(1):filteredEventTimes{2}(end)+15*sampling_frequency(1);
 
 % Set the start time for normalization
 timeStart = time2save(1);
 
 % Calculate the audio start times from the Natus system, normalized to timeStart
-natusAudioStart = (filteredEventTimes{3}-timeStart)./sampling_frequency(1);
+natusAudioStart = (filteredEventTimes{2}-timeStart)./sampling_frequency(1);
 
 % Calculate the audio end times from the Natus system, normalized to timeStart
-natusAudioEnd = (filteredEventTimes{5}-timeStart)./sampling_frequency(1);
+natusAudioEnd = (filteredEventTimes{10}-timeStart)./sampling_frequency(1);
 
 % Calculate the probe onset times from the Natus system, normalized to timeStart
 natusTimingProbe = (filteredEventTimes{6}-timeStart)./sampling_frequency(1);
@@ -193,9 +193,9 @@ ch_nums = 1:length(ch_labels);
 % Convert channel types to strings
 ch_type = string(channels_table.type);
 % Find indices of non-SEEG channels
-ch_deselect = find(~contains(ch_type,'seeg'));
+ch_deselect = (~contains(ch_type,'seeg'));
 % Find indices of SEEG channels
-ch_select = find(contains(ch_type,'seeg'));
+ch_select = (contains(ch_type,'seeg'));
 
 % Create a structure to hold preprocessing data
 for_preproc = struct;
@@ -214,7 +214,7 @@ for_preproc.decimation_freq = sampling_frequency(1)/4;
 
 % Create an ecog_data object with the preprocessing data and metadata
 obj = ecog_data(for_preproc,subject,experiment,save_filename,save_path,d_files,...
-    PATH_EDF,ch_labels(ch_select),1:length(ch_select),[],ch_type(ch_select));
+    PATH_EDF,ch_labels(ch_select),1:sum(ch_select),[],ch_type(ch_select));
 % Preprocess the signal
 obj.preprocess_signal('order',order,'isPlotVisible',false,'doneVisualInspection',false);
 % Store the events table in the object
@@ -233,26 +233,27 @@ if(~isfolder(save_path))
     mkdir(save_path)
 end
 
-% Save the ecog_data object
+% % Save the ecog_data object
 save([save_path filesep save_filename],'obj','-v7.3');
+% 
+%
+% Extract high gamma components using NapLab filter extraction
+obj.extract_high_gamma('doNapLabFilterExtraction', true);
 
-% % Extract high gamma components using NapLab filter extraction
-% obj.extract_high_gamma('doNapLabFilterExtraction', true);
-% 
-% % Downsample the signal to 100 Hz
-% obj.downsample_signal('decimationFreq', 100);
-% 
-% % Extract significant channels from the signal
-% obj.extract_significant_channel();
-% 
-% % Determine time-based significance of the signal
-% obj.extract_time_significance();
-% 
-% % Calculate metrics for signal normalization
-% obj.extract_normalization_metrics();
-% 
-% % Normalize the signal using z-score method
-% obj.normalize_signal("normtype", 'z-score');
+% Downsample the signal to 200 Hz
+obj.downsample_signal('decimationFreq', 200);
+
+% Extract significant channels from the signal
+obj.extract_significant_channel();
+
+% % % Determine time-based significance of the signal
+ obj.extract_time_significance();
+
+% Calculate metrics for signal normalization
+obj.extract_normalization_metrics();
+
+% Normalize the signal using z-score method
+obj.normalize_signal("normtype", 'z-score');
 % 
 % % Generate the experiment report
-% generateExperimentReport(obj, [subject '_' experiment]);
+generateExperimentReport(obj, [obj.subject '_' obj.experiment]);
