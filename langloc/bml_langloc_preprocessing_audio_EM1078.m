@@ -5,9 +5,9 @@ close all
 
 %% NOTES ON PROCESSING THIS PATIENT
 %% DEFINE VARIABLES
-DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
+DATAPATH = '/Volumes/disk/nese/LangLoc/data';
 SUBJECT='sub-EM1078';
-SESSION = 'LangLocAudio';
+SESSION = 'LangLocAud-2';
 MODALITY='audio';
 
 %% LOAD NEW UTILITIES FOLDER
@@ -34,7 +34,7 @@ if ~exist(PATH_SAVE,'dir'), mkdir(PATH_SAVE); end
 % addpath('/Users/ashleywalton/Dropbox/1_BraindModulationLab/0_MIT/EMU_Preprocessing/EMU_LangLoc_Preprocessing_aw/langloc_utils/edfread.m');
 % edf_file=[SUBJECT,'_LangLocAudio_d02.EDF'];
 edflist = dir([PATH_EDF filesep '*.EDF']);
-edfname = edflist.name;
+edfname = edflist(2).name;
 
 [hdr,record]=edfread([PATH_EDF filesep edfname]);
 info = edfinfo([PATH_EDF filesep edfname]);
