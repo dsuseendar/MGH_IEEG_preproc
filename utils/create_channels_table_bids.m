@@ -20,7 +20,7 @@ function channels_table = create_channels_table_bids(edfinfo, PATH_ANNOT, SUBJEC
     
     % Define channel type patterns
     type_patterns = struct('seeg', ["L", "R"], ...
-                           'eeg', ["FP", "F7", "F3", "F4", "F8", "FZ", "T1", "T2", "T3", "T4", "T5", "T6", "O1", "O2", "PZ", "P3", "P4", "CZ", "C3", "C4"], ...
+                           'eeg', ["FP", "F07", "F03", "F04", "F08", "FZ", "T01", "T02", "T03", "T04", "T05", "T06", "O01", "O02", "PZ", "P03", "P04", "CZ", "C03", "C04"], ...
                            'eog', ["LOC", "ROC"], ...
                            'ecg', ["EKG"], ...
                            'emg', ["EMG"], ...
@@ -32,7 +32,13 @@ function channels_table = create_channels_table_bids(edfinfo, PATH_ANNOT, SUBJEC
     channels_table.type = categorical(repmat({'not labeled'}, height(channels_table), 1));
     for type = fieldnames(type_patterns)'
         type = type{1};
-        channels_table.type(contains(channels_table.name, type_patterns.(type))) = type;
+        if(strcmp(type,'seeg'))
+            channels_table.type(contains(channels_table.name, type_patterns.(type))) = type;
+        elseif(strcmp(type,'eeg')|strcmp(type,'eog')|strcmp(type,'ecg')|strcmp(type,'TRIG'))
+            channels_table.type(ismember(channels_table.name, type_patterns.(type))) = type;
+        else
+            channels_table.type(contains(channels_table.name, type_patterns.(type))) = type;
+        end
     end
     channels_table.type(channels_table.name == "CII" | channels_table.group == "C") = "OTHER";
     
