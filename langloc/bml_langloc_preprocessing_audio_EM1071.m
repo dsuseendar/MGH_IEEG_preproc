@@ -5,9 +5,9 @@ close all
 
 %% NOTES ON PROCESSING THIS PATIENT
 %% DEFINE VARIABLES
-DATAPATH = '/Users/dsuseendar/nese/LangLoc/data';
+DATAPATH = '/Volumes/disk/nese/LangLoc/data';
 SUBJECT='sub-EM1071';
-SESSION = 'LangLocAudio';
+SESSION = 'LangLocAudio-2';
 MODALITY='audio';
 
 %% LOAD NEW UTILITIES FOLDER
@@ -34,7 +34,7 @@ if ~exist(PATH_SAVE,'dir'), mkdir(PATH_SAVE); end
 % addpath('/Users/ashleywalton/Dropbox/1_BraindModulationLab/0_MIT/EMU_Preprocessing/EMU_LangLoc_Preprocessing_aw/langloc_utils/edfread.m');
 % edf_file=[SUBJECT,'_LangLocAudio_d02.EDF'];
 edflist = dir([PATH_EDF filesep '*.EDF']);
-edfname = edflist.name;
+edfname = edflist(2).name;
 
 [hdr,record]=edfread([PATH_EDF filesep edfname]);
 info = edfinfo([PATH_EDF filesep edfname]);
@@ -89,13 +89,13 @@ filteredEventTimes = processAndPlotTriggerEventsLangLocAudio(TrigMat1);
 %% GET BEHAVIORAL DATA
 d_events=dir(strcat(PATH_EVENTS,'/*.csv'));
 %This was manually excluding events files for runs that were not completed
-task_files_to_pick=[1:2];
+task_files_to_pick=[1];
 d_events=d_events(task_files_to_pick);
 
 
 [events_table] = extract_behavioral_events_for_langloc_audio('behavior_files',d_events,'sampling',unique(sampling_frequency));
 % check if there are the correct number of trials (120)
-assert(size(events_table,1)==80);
+assert(size(events_table,1)==40);
 
 
 
